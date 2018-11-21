@@ -2,6 +2,32 @@ import sketch from "sketch";
 
 let md = "";
 const imgRegex = /^image-/;
+const getFontName = layer => {
+  return layer.sketchObject
+    .style()
+    .primitiveTextStyle()
+    .attributes()
+    ["NSFont"].fontName();
+};
+
+const isBold = layer => {
+  return getFontName(layer).match(/(Bold|bold)$/);
+};
+
+const isItalic = layer => {
+  return getFontName(layer).match(/(Italic|italic|Oblique|oblique)$/);
+};
+
+const getFontWeight = layer => {
+  console.log(layer);
+  if (isBold(layer)) {
+    return "**";
+  } else if (isItalic(layer)) {
+    return "*";
+  } else {
+    return "";
+  }
+};
 
 const processLayers = (layer, directoryPath) => {
   // process groups but ignore images group layers or symbols
@@ -65,13 +91,15 @@ const parseToMd = (layerName, layer, directoryPath) => {
         .trim()
         .split("\n")
         .forEach((paragraph, key, content) => {
-          md += `${paragraph}\n${
+          md += `${getFontWeight(layer)}${paragraph}${getFontWeight(layer)}\n${
             Object.is(content.length - 1, key) ? "\n" : ""
           }`;
         });
       break;
     case "paragraph":
-      md += `${layer.text.trim()}\n\n`;
+      md += `${getFontWeight(layer)}${layer.text.trim()}${getFontWeight(
+        layer
+      )}\n\n`;
   }
 };
 

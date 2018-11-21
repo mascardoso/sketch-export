@@ -400,6 +400,30 @@ __webpack_require__.r(__webpack_exports__);
 var md = "";
 var imgRegex = /^image-/;
 
+var getFontName = function getFontName(layer) {
+  return layer.sketchObject.style().primitiveTextStyle().attributes()["NSFont"].fontName();
+};
+
+var isBold = function isBold(layer) {
+  return getFontName(layer).match(/(Bold|bold)$/);
+};
+
+var isItalic = function isItalic(layer) {
+  return getFontName(layer).match(/(Italic|italic|Oblique|oblique)$/);
+};
+
+var getFontWeight = function getFontWeight(layer) {
+  console.log(layer);
+
+  if (isBold(layer)) {
+    return "**";
+  } else if (isItalic(layer)) {
+    return "*";
+  } else {
+    return "";
+  }
+};
+
 var processLayers = function processLayers(layer, directoryPath) {
   // process groups but ignore images group layers or symbols
   if (layer.type === "Group" && !layer.name.match(imgRegex)) {
@@ -460,12 +484,12 @@ var parseToMd = function parseToMd(layerName, layer, directoryPath) {
 
     case "paragraph-multi":
       layer.text.trim().split("\n").forEach(function (paragraph, key, content) {
-        md += "".concat(paragraph, "\n").concat(Object.is(content.length - 1, key) ? "\n" : "");
+        md += "".concat(getFontWeight(layer)).concat(paragraph).concat(getFontWeight(layer), "\n").concat(Object.is(content.length - 1, key) ? "\n" : "");
       });
       break;
 
     case "paragraph":
-      md += "".concat(layer.text.trim(), "\n\n");
+      md += "".concat(getFontWeight(layer)).concat(layer.text.trim()).concat(getFontWeight(layer), "\n\n");
   }
 };
 
