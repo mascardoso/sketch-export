@@ -394,8 +394,7 @@ module.exports.writeFileSync = function(path, data, options) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var sketch__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! sketch */ "sketch");
-/* harmony import */ var sketch__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(sketch__WEBPACK_IMPORTED_MODULE_0__);
+var sketchDom = __webpack_require__(/*! sketch/dom */ "sketch/dom");
 
 var md = "";
 var imgRegex = /^image-/;
@@ -413,8 +412,6 @@ var isItalic = function isItalic(layer) {
 };
 
 var getFontWeight = function getFontWeight(layer) {
-  console.log(layer);
-
   if (isBold(layer)) {
     return "**";
   } else if (isItalic(layer)) {
@@ -467,7 +464,7 @@ var parseToMd = function parseToMd(layerName, layer, directoryPath) {
       break;
 
     case "image":
-      sketch__WEBPACK_IMPORTED_MODULE_0___default.a.export(layer, {
+      sketchDom.export(layer, {
         formats: "jpg",
         output: directoryPath,
         overwriting: true,
@@ -511,26 +508,26 @@ var getMdContent = function getMdContent(allLayers, artboardName, directoryPath)
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var sketch__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! sketch */ "sketch");
-/* harmony import */ var sketch__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(sketch__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _skpm_fs__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @skpm/fs */ "./node_modules/@skpm/fs/index.js");
-/* harmony import */ var _skpm_fs__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_skpm_fs__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _parse_layers__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./parse-layers */ "./src/parse-layers.js");
+/* harmony import */ var _skpm_fs__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @skpm/fs */ "./node_modules/@skpm/fs/index.js");
+/* harmony import */ var _skpm_fs__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_skpm_fs__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _parse_layers__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./parse-layers */ "./src/parse-layers.js");
 
 
 
+var document = __webpack_require__(/*! sketch/dom */ "sketch/dom").getSelectedDocument();
+
+var UI = __webpack_require__(/*! sketch/ui */ "sketch/ui");
 
 var saveMd = function saveMd(path, docName, artboardName, content) {
-  _skpm_fs__WEBPACK_IMPORTED_MODULE_1___default.a.writeFileSync("".concat(path).concat(docName, "-").concat(artboardName, ".md"), content, "utf8");
+  _skpm_fs__WEBPACK_IMPORTED_MODULE_0___default.a.writeFileSync("".concat(path).concat(docName, "-").concat(artboardName, ".md"), content, "utf8");
 };
 
 /* harmony default export */ __webpack_exports__["default"] = (function () {
-  var doc = sketch__WEBPACK_IMPORTED_MODULE_0___default.a.getSelectedDocument();
-  var docName = doc.sketchObject.displayName().replace(".sketch", ""); // remove sketch extension
+  var docName = document.sketchObject.displayName().replace(".sketch", ""); // remove sketch extension
 
-  var directoryPath = doc.path.replace(doc.sketchObject.displayName(), ""); // remove filename
+  var directoryPath = document.path.replace(document.sketchObject.displayName(), ""); // remove filename
 
-  var page = doc.selectedPage;
+  var page = document.selectedPage;
   var allLayers = page.layers;
   var artboards = [];
   allLayers.forEach(function (layer) {
@@ -540,18 +537,18 @@ var saveMd = function saveMd(path, docName, artboardName, content) {
   });
 
   if (artboards.length === 0) {
-    sketch__WEBPACK_IMPORTED_MODULE_0___default.a.UI.message("You have no artboards in your page. You need at least one.");
+    UI.message("You have no artboards in your page. You need at least one.");
   } else {
-    var selection = sketch__WEBPACK_IMPORTED_MODULE_0___default.a.UI.getSelectionFromUser("Which artboard you want to export to markdown", artboards.reverse());
+    var selection = UI.getSelectionFromUser("Which artboard you want to export to markdown", artboards.reverse());
     var ok = selection[2];
     var selectedArtboard = artboards[selection[1]];
 
     if (ok) {
       try {
-        saveMd(directoryPath, docName, selectedArtboard, Object(_parse_layers__WEBPACK_IMPORTED_MODULE_2__["default"])(allLayers, selectedArtboard, directoryPath));
-        sketch__WEBPACK_IMPORTED_MODULE_0___default.a.UI.message("\uD83C\uDF89 ".concat(selectedArtboard, " was successfully exported to markdown \uD83C\uDF89"));
+        saveMd(directoryPath, docName, selectedArtboard, Object(_parse_layers__WEBPACK_IMPORTED_MODULE_1__["default"])(allLayers, selectedArtboard, directoryPath));
+        UI.message("\uD83C\uDF89 ".concat(selectedArtboard, " was successfully exported to markdown \uD83C\uDF89"));
       } catch (err) {
-        sketch__WEBPACK_IMPORTED_MODULE_0___default.a.UI.message("".concat(err, ". Try again."));
+        UI.message("".concat(err, ". Try again."));
       }
     }
   }
@@ -570,14 +567,25 @@ module.exports = require("buffer");
 
 /***/ }),
 
-/***/ "sketch":
-/*!*************************!*\
-  !*** external "sketch" ***!
-  \*************************/
+/***/ "sketch/dom":
+/*!*****************************!*\
+  !*** external "sketch/dom" ***!
+  \*****************************/
 /*! no static exports found */
 /***/ (function(module, exports) {
 
-module.exports = require("sketch");
+module.exports = require("sketch/dom");
+
+/***/ }),
+
+/***/ "sketch/ui":
+/*!****************************!*\
+  !*** external "sketch/ui" ***!
+  \****************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = require("sketch/ui");
 
 /***/ })
 

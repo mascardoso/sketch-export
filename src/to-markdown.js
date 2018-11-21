@@ -1,17 +1,20 @@
-import sketch from "sketch";
 import fs from "@skpm/fs";
-
 import getMdContent from "./parse-layers";
+
+const document = require("sketch/dom").getSelectedDocument();
+const UI = require("sketch/ui");
 
 const saveMd = (path, docName, artboardName, content) => {
   fs.writeFileSync(`${path}${docName}-${artboardName}.md`, content, "utf8");
 };
 
 export default function() {
-  const doc = sketch.getSelectedDocument();
-  const docName = doc.sketchObject.displayName().replace(".sketch", ""); // remove sketch extension
-  const directoryPath = doc.path.replace(doc.sketchObject.displayName(), ""); // remove filename
-  const page = doc.selectedPage;
+  const docName = document.sketchObject.displayName().replace(".sketch", ""); // remove sketch extension
+  const directoryPath = document.path.replace(
+    document.sketchObject.displayName(),
+    ""
+  ); // remove filename
+  const page = document.selectedPage;
   const allLayers = page.layers;
 
   let artboards = [];
@@ -23,11 +26,9 @@ export default function() {
   });
 
   if (artboards.length === 0) {
-    sketch.UI.message(
-      "You have no artboards in your page. You need at least one."
-    );
+    UI.message("You have no artboards in your page. You need at least one.");
   } else {
-    const selection = sketch.UI.getSelectionFromUser(
+    const selection = UI.getSelectionFromUser(
       "Which artboard you want to export to markdown",
       artboards.reverse()
     );
@@ -41,11 +42,11 @@ export default function() {
           selectedArtboard,
           getMdContent(allLayers, selectedArtboard, directoryPath)
         );
-        sketch.UI.message(
+        UI.message(
           `🎉 ${selectedArtboard} was successfully exported to markdown 🎉`
         );
       } catch (err) {
-        sketch.UI.message(`${err}. Try again.`);
+        UI.message(`${err}. Try again.`);
       }
     }
   }

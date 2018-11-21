@@ -1,4 +1,4 @@
-import sketch from "sketch";
+const sketchDom = require("sketch/dom");
 
 let md = "";
 const imgRegex = /^image-/;
@@ -19,7 +19,6 @@ const isItalic = layer => {
 };
 
 const getFontWeight = layer => {
-  console.log(layer);
   if (isBold(layer)) {
     return "**";
   } else if (isItalic(layer)) {
@@ -68,7 +67,7 @@ const parseToMd = (layerName, layer, directoryPath) => {
       md += `#### ${layer.text.trim()}\n`;
       break;
     case "image":
-      sketch.export(layer, {
+      sketchDom.export(layer, {
         formats: "jpg",
         output: directoryPath,
         overwriting: true,

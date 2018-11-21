@@ -19,7 +19,7 @@
   "name": "sketch-export-to",
   "identifier": "sketch-export-to",
   "disableCocoaScriptPreprocessor": true,
-  "appcast": "https://raw.githubusercontent.com//master/.appcast.xml",
+  "appcast": "https://raw.githubusercontent.com/mascardoso/sketch-export/master/.appcast.xml",
   "author": "Marco Cardoso",
   "authorEmail": "mascardoso@gmail.com"
 }
