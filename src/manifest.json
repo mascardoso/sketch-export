@@ -1,0 +1,16 @@
+{
+  "compatibleVersion": 3,
+  "bundleVersion": 1,
+  "icon": "icon.png",
+  "commands": [
+    {
+      "name": "Artboard -> Markdown",
+      "identifier": "to-markdown-identifier",
+      "script": "./to-markdown.js"
+    }
+  ],
+  "menu": {
+    "title": "Export Sketch",
+    "items": ["to-markdown-identifier"]
+  }
+}

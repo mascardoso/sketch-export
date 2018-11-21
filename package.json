@@ -1,0 +1,30 @@
+{
+  "name": "sketch-export-to",
+  "version": "0.1.0",
+  "engines": {
+    "sketch": ">=3.0"
+  },
+  "skpm": {
+    "name": "sketch-export-to",
+    "manifest": "src/manifest.json",
+    "main": "sketch-export-to.sketchplugin",
+    "assets": [
+      "assets/**/*"
+    ]
+  },
+  "scripts": {
+    "build": "skpm-build",
+    "watch": "skpm-build --watch",
+    "start": "skpm-build --watch --run",
+    "postinstall": "npm run build && skpm-link"
+  },
+  "devDependencies": {
+    "@skpm/builder": "^0.5.11"
+  },
+  "author": "Marco Cardoso <mascardoso@gmail.com>",
+  "dependencies": {
+    "@skpm/dialog": "^0.2.4",
+    "@skpm/fs": "^0.2.2",
+    "eslint": "^5.9.0"
+  }
+}

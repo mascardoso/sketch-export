@@ -1,0 +1,25 @@
+{
+  "compatibleVersion": 3,
+  "bundleVersion": 1,
+  "icon": "icon.png",
+  "commands": [
+    {
+      "name": "Artboard -> Markdown",
+      "identifier": "to-markdown-identifier",
+      "script": "to-markdown.js"
+    }
+  ],
+  "menu": {
+    "title": "Export Sketch",
+    "items": [
+      "to-markdown-identifier"
+    ]
+  },
+  "version": "0.1.0",
+  "name": "sketch-export-to",
+  "identifier": "sketch-export-to",
+  "disableCocoaScriptPreprocessor": true,
+  "appcast": "https://raw.githubusercontent.com//master/.appcast.xml",
+  "author": "Marco Cardoso",
+  "authorEmail": "mascardoso@gmail.com"
+}
