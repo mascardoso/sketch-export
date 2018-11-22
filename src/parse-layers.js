@@ -3,11 +3,7 @@ const sketchDom = require("sketch/dom");
 let md = "";
 const imgRegex = /^image-/;
 const getFontName = layer => {
-  return layer.sketchObject
-    .style()
-    .primitiveTextStyle()
-    .attributes()
-    ["NSFont"].fontName();
+  return layer.sketchObject.font().fontName();
 };
 
 const isBold = layer => {
@@ -39,18 +35,8 @@ const processLayers = (layer, directoryPath) => {
   }
 };
 
-const readLayers = (allLayers, artboardName, directoryPath) => {
-  allLayers.map(layer => {
-    if (layer.type === "Artboard" && layer.name === artboardName) {
-      layer.layers.reverse().map(layer => {
-        processLayers(layer, directoryPath);
-      });
-    }
-  });
-};
-
 const parseToMd = (layerName, layer, directoryPath) => {
-  // if layer starts with image* set the layerName to image
+  // if layer starts with image-* set the layerName to image case
   layerName = layerName.match(imgRegex) ? "image" : layerName;
 
   switch (layerName) {
@@ -66,6 +52,9 @@ const parseToMd = (layerName, layer, directoryPath) => {
     case "heading4":
       md += `#### ${layer.text.trim()}\n`;
       break;
+    case "blockquote":
+      md += `> ${layer.text.trim()}\n`;
+      break;
     case "image":
       sketchDom.export(layer, {
         formats: "jpg",
@@ -75,35 +64,53 @@ const parseToMd = (layerName, layer, directoryPath) => {
       });
       md += `![](./${layer.name}.jpg)\n\n`;
       break;
-    case "list":
+    case "list-unordered":
       layer.text
         .trim()
-        .split("\n")
+        .replace(/•\s+/g, "") // remove bullets
+        .split(/[\s,]+[\s,]/)
         .forEach((listItem, key, content) => {
           md += `* ${listItem}\n${
             Object.is(content.length - 1, key) ? "\n" : ""
           }`;
         });
       break;
+    case "list-ordered":
+      layer.text
+        .trim()
+        .replace(/[0-9].\s+/g, "") // remove digits and dot
+        .split(/[\s,]+[\s,]/)
+        .forEach((listItem, key, content) => {
+          md += `${key + 1}. ${listItem}\n${
+            Object.is(content.length - 1, key) ? "\n" : ""
+          }`;
+        });
+      break;
     case "paragraph-multi":
+      const multiParContext = getFontWeight(layer);
       layer.text
         .trim()
         .split("\n")
         .forEach((paragraph, key, content) => {
-          md += `${getFontWeight(layer)}${paragraph}${getFontWeight(layer)}\n${
+          md += `${multiParContext}${paragraph}${multiParContext}\n${
             Object.is(content.length - 1, key) ? "\n" : ""
           }`;
         });
       break;
     case "paragraph":
-      md += `${getFontWeight(layer)}${layer.text.trim()}${getFontWeight(
-        layer
-      )}\n\n`;
+      const simpleParContext = getFontWeight(layer);
+      md += `${simpleParContext}${layer.text.trim()}${simpleParContext}\n\n`;
   }
 };
 
-const getMdContent = (allLayers, artboardName, directoryPath) => {
-  readLayers(allLayers, artboardName, directoryPath);
+const getMdContent = async (allLayers, artboardName, directoryPath) => {
+  await allLayers.map(layer => {
+    if (layer.type === "Artboard" && layer.name === artboardName) {
+      layer.layers.reverse().map(layer => {
+        processLayers(layer, directoryPath);
+      });
+    }
+  });
   return md;
 };
 
