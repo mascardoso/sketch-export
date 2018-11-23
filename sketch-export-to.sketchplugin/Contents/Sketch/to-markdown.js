@@ -1729,7 +1729,6 @@ var parseToMd = function parseToMd(layerName, layer, directoryPath) {
       break;
 
     case "paragraph":
-      console.log(layer.sketchObject.styleAttributes().NSStrikethrough);
       var simpleParContext = getFontDecoration(layer);
       md += "".concat(simpleParContext).concat(layer.text.trim()).concat(simpleParContext, "\n\n");
   }
@@ -1803,21 +1802,17 @@ var sketchDom = __webpack_require__(/*! sketch/dom */ "sketch/dom");
   var _ref = _babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_1___default()(
   /*#__PURE__*/
   _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee(context) {
-    var document, fileName, directoryPath, page, allLayers, saveMd, artboards, selection, ok, selectedArtboard, md;
+    var document, page, allLayers, saveMd, artboards, selection, ok, selectedArtboard, savePanel, result, file, directoryPath, md;
     return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee$(_context) {
       while (1) {
         switch (_context.prev = _context.next) {
           case 0:
             document = sketchDom.fromNative(context.document);
-            fileName = document.sketchObject.displayName().replace(".sketch", ""); // remove sketch extension
-
-            directoryPath = document.path.replace(document.sketchObject.displayName(), ""); // remove filename
-
             page = document.selectedPage;
             allLayers = page.layers; // save to markdown file
 
-            saveMd = function saveMd(path, docName, artboardName, content) {
-              _skpm_fs__WEBPACK_IMPORTED_MODULE_2___default.a.writeFileSync("".concat(path).concat(docName, "-").concat(artboardName, ".md"), content, "utf8");
+            saveMd = function saveMd(path, file, content) {
+              _skpm_fs__WEBPACK_IMPORTED_MODULE_2___default.a.writeFileSync("".concat(path).concat(file), content, "utf8");
             }; // get current artboards in page selected
 
 
@@ -1829,47 +1824,61 @@ var sketchDom = __webpack_require__(/*! sketch/dom */ "sketch/dom");
             }); // select at least one artboard
 
             if (!(artboards.length === 0)) {
-              _context.next = 12;
+              _context.next = 10;
               break;
             }
 
             UI.message("❌ You have no artboards in your page. You need at least one.");
-            _context.next = 27;
+            _context.next = 31;
             break;
 
-          case 12:
+          case 10:
             // prompt artboard
             selection = UI.getSelectionFromUser("Which artboard you want to export to markdown", artboards.reverse());
             ok = selection[2];
             selectedArtboard = artboards[selection[1]];
 
             if (!ok) {
-              _context.next = 27;
+              _context.next = 31;
               break;
             }
 
-            _context.prev = 16;
-            _context.next = 19;
+            // Configuring save panel
+            savePanel = NSSavePanel.savePanel();
+            savePanel.allowedFileTypes = ["md"]; // Launching alert
+
+            result = savePanel.runModal();
+
+            if (!(result == NSFileHandlingPanelOKButton)) {
+              _context.next = 31;
+              break;
+            }
+
+            file = "".concat(savePanel.nameFieldStringValue(), ".md");
+            directoryPath = savePanel.URL().path().replace(file, ""); // remove file to get only directory
+
+            _context.prev = 20;
+            _context.next = 23;
             return Object(_parse_layers__WEBPACK_IMPORTED_MODULE_3__["default"])(allLayers, selectedArtboard, directoryPath);
 
-          case 19:
+          case 23:
             md = _context.sent;
-            saveMd(directoryPath, fileName, selectedArtboard, md);
+            saveMd(directoryPath, file, md);
             UI.message("\uD83C\uDF89 ".concat(selectedArtboard, " was successfully exported to markdown \uD83C\uDF89"));
-            _context.next = 27;
+            _context.next = 31;
             break;
 
-          case 24:
-            _context.prev = 24;
-            _context.t0 = _context["catch"](16);
+          case 28:
+            _context.prev = 28;
+            _context.t0 = _context["catch"](20);
             UI.message("\u274C ".concat(_context.t0, ". Try again."));
 
-          case 27:
+          case 31:
           case "end":
             return _context.stop();
         }
       }
-    }, _callee, this, [[16, 24]]);
+    }, _callee, this, [[20, 28]]);
   }));
 
   return function (_x) {

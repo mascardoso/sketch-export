@@ -6,17 +6,12 @@ const sketchDom = require("sketch/dom");
 
 export default async context => {
   const document = sketchDom.fromNative(context.document);
-  const fileName = document.sketchObject.displayName().replace(".sketch", ""); // remove sketch extension
-  const directoryPath = document.path.replace(
-    document.sketchObject.displayName(),
-    ""
-  ); // remove filename
   const page = document.selectedPage;
   const allLayers = page.layers;
 
   // save to markdown file
-  const saveMd = (path, docName, artboardName, content) => {
-    fs.writeFileSync(`${path}${docName}-${artboardName}.md`, content, "utf8");
+  const saveMd = (path, file, content) => {
+    fs.writeFileSync(`${path}${file}`, content, "utf8");
   };
 
   // get current artboards in page selected
@@ -40,18 +35,31 @@ export default async context => {
     const ok = selection[2];
     const selectedArtboard = artboards[selection[1]];
     if (ok) {
-      try {
-        const md = await getMdContent(
-          allLayers,
-          selectedArtboard,
-          directoryPath
-        );
-        saveMd(directoryPath, fileName, selectedArtboard, md);
-        UI.message(
-          `🎉 ${selectedArtboard} was successfully exported to markdown 🎉`
-        );
-      } catch (err) {
-        UI.message(`❌ ${err}. Try again.`);
+      // Configuring save panel
+      var savePanel = NSSavePanel.savePanel();
+      savePanel.allowedFileTypes = ["md"];
+
+      // Launching alert
+      var result = savePanel.runModal();
+      if (result == NSFileHandlingPanelOKButton) {
+        const file = `${savePanel.nameFieldStringValue()}.md`;
+        const directoryPath = savePanel
+          .URL()
+          .path()
+          .replace(file, ""); // remove file to get only directory
+        try {
+          const md = await getMdContent(
+            allLayers,
+            selectedArtboard,
+            directoryPath
+          );
+          saveMd(directoryPath, file, md);
+          UI.message(
+            `🎉 ${selectedArtboard} was successfully exported to markdown 🎉`
+          );
+        } catch (err) {
+          UI.message(`❌ ${err}. Try again.`);
+        }
       }
     }
   }

@@ -107,7 +107,6 @@ const parseToMd = (layerName, layer, directoryPath) => {
         });
       break;
     case "paragraph":
-      console.log(layer.sketchObject.styleAttributes().NSStrikethrough);
       const simpleParContext = getFontDecoration(layer);
       md += `${simpleParContext}${layer.text.trim()}${simpleParContext}\n\n`;
   }
