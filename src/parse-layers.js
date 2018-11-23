@@ -3,7 +3,7 @@ const sketchDom = require("sketch/dom");
 let md = "";
 const imgRegex = /^image-/;
 const getFontName = layer => {
-  return layer.sketchObject.font().fontName();
+  return layer.sketchObject.fontPostscriptName();
 };
 
 const isBold = layer => {
@@ -14,11 +14,17 @@ const isItalic = layer => {
   return getFontName(layer).match(/(Italic|italic|Oblique|oblique)$/);
 };
 
-const getFontWeight = layer => {
+const isStrikeThrough = layer => {
+  return layer.sketchObject.styleAttributes().NSStrikethrough;
+};
+
+const getFontDecoration = layer => {
   if (isBold(layer)) {
     return "**";
   } else if (isItalic(layer)) {
     return "*";
+  } else if (isStrikeThrough(layer)) {
+    return "~~";
   } else {
     return "";
   }
@@ -53,7 +59,10 @@ const parseToMd = (layerName, layer, directoryPath) => {
       md += `#### ${layer.text.trim()}\n`;
       break;
     case "blockquote":
-      md += `> ${layer.text.trim()}\n`;
+      md += `> ${layer.text.trim()}\n\n`;
+      break;
+    case "horizontal-rule":
+      md += `***\n\n`;
       break;
     case "image":
       sketchDom.export(layer, {
@@ -87,7 +96,7 @@ const parseToMd = (layerName, layer, directoryPath) => {
         });
       break;
     case "paragraph-multi":
-      const multiParContext = getFontWeight(layer);
+      const multiParContext = getFontDecoration(layer);
       layer.text
         .trim()
         .split("\n")
@@ -98,7 +107,8 @@ const parseToMd = (layerName, layer, directoryPath) => {
         });
       break;
     case "paragraph":
-      const simpleParContext = getFontWeight(layer);
+      console.log(layer.sketchObject.styleAttributes().NSStrikethrough);
+      const simpleParContext = getFontDecoration(layer);
       md += `${simpleParContext}${layer.text.trim()}${simpleParContext}\n\n`;
   }
 };

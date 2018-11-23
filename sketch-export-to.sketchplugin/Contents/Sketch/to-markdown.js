@@ -1630,7 +1630,7 @@ var md = "";
 var imgRegex = /^image-/;
 
 var getFontName = function getFontName(layer) {
-  return layer.sketchObject.font().fontName();
+  return layer.sketchObject.fontPostscriptName();
 };
 
 var isBold = function isBold(layer) {
@@ -1641,11 +1641,17 @@ var isItalic = function isItalic(layer) {
   return getFontName(layer).match(/(Italic|italic|Oblique|oblique)$/);
 };
 
-var getFontWeight = function getFontWeight(layer) {
+var isStrikeThrough = function isStrikeThrough(layer) {
+  return layer.sketchObject.styleAttributes().NSStrikethrough;
+};
+
+var getFontDecoration = function getFontDecoration(layer) {
   if (isBold(layer)) {
     return "**";
   } else if (isItalic(layer)) {
     return "*";
+  } else if (isStrikeThrough(layer)) {
+    return "~~";
   } else {
     return "";
   }
@@ -1684,7 +1690,11 @@ var parseToMd = function parseToMd(layerName, layer, directoryPath) {
       break;
 
     case "blockquote":
-      md += "> ".concat(layer.text.trim(), "\n");
+      md += "> ".concat(layer.text.trim(), "\n\n");
+      break;
+
+    case "horizontal-rule":
+      md += "***\n\n";
       break;
 
     case "image":
@@ -1712,14 +1722,15 @@ var parseToMd = function parseToMd(layerName, layer, directoryPath) {
       break;
 
     case "paragraph-multi":
-      var multiParContext = getFontWeight(layer);
+      var multiParContext = getFontDecoration(layer);
       layer.text.trim().split("\n").forEach(function (paragraph, key, content) {
         md += "".concat(multiParContext).concat(paragraph).concat(multiParContext, "\n").concat(Object.is(content.length - 1, key) ? "\n" : "");
       });
       break;
 
     case "paragraph":
-      var simpleParContext = getFontWeight(layer);
+      console.log(layer.sketchObject.styleAttributes().NSStrikethrough);
+      var simpleParContext = getFontDecoration(layer);
       md += "".concat(simpleParContext).concat(layer.text.trim()).concat(simpleParContext, "\n\n");
   }
 };

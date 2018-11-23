@@ -16,11 +16,13 @@ Gingerbread oat cake gingerbread. Marzipan liquorice apple pie marzipan gummi be
 
 ![](./image-01.jpg)
 
-Gingerbread oat cake gingerbread. Marzipan liquorice apple pie marzipan gummi bears sweet gummi bears sweet roll. Sweet donut soufflé cupcake macaroon chocolate soufflé sweet roll candy canes.
+***
 
-Gingerbread oat cake gingerbread. Marzipan liquorice apple pie marzipan gummi bears sweet gummi bears sweet roll. Sweet donut soufflé cupcake macaroon chocolate soufflé sweet roll candy canes.
-
-Gingerbread oat cake gingerbread. Marzipan liquorice apple pie marzipan gummi bears sweet gummi bears sweet roll. Sweet donut soufflé cupcake macaroon chocolate soufflé sweet roll candy canes.
+~~Gingerbread oat cake gingerbread. Marzipan liquorice apple pie marzipan gummi bears sweet gummi bears sweet roll. Sweet donut soufflé cupcake macaroon chocolate soufflé sweet roll candy canes.~~
+~~~~
+~~Gingerbread oat cake gingerbread. Marzipan liquorice apple pie marzipan gummi bears sweet gummi bears sweet roll. Sweet donut soufflé cupcake macaroon chocolate soufflé sweet roll candy canes.~~
+~~~~
+~~Gingerbread oat cake gingerbread. Marzipan liquorice apple pie marzipan gummi bears sweet gummi bears sweet roll. Sweet donut soufflé cupcake macaroon chocolate soufflé sweet roll candy canes.~~
 
 ## Heading 2 inside a group
 *A paragraph in italic inside a group*
@@ -28,3 +30,6 @@ Gingerbread oat cake gingerbread. Marzipan liquorice apple pie marzipan gummi be
 ![](./image-02.jpg)
 
 > A very nice blockquote
+
+~~Here goes a paragraph strikethroughed.~~
+
