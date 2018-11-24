@@ -1642,7 +1642,7 @@ var isItalic = function isItalic(layer) {
 };
 
 var isStrikeThrough = function isStrikeThrough(layer) {
-  return layer.sketchObject.styleAttributes().NSStrikethrough;
+  return layer.sketchObject.styleAttributes().NSStrikethrough > 0;
 };
 
 var getFontDecoration = function getFontDecoration(layer) {
@@ -1722,6 +1722,7 @@ var parseToMd = function parseToMd(layerName, layer, directoryPath) {
       break;
 
     case "paragraph-multi":
+      console.log(layer.sketchObject.styleAttributes());
       var multiParContext = getFontDecoration(layer);
       layer.text.trim().split("\n").forEach(function (paragraph, key, content) {
         md += "".concat(multiParContext).concat(paragraph).concat(multiParContext, "\n").concat(Object.is(content.length - 1, key) ? "\n" : "");

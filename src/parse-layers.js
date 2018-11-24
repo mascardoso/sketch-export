@@ -15,7 +15,7 @@ const isItalic = layer => {
 };
 
 const isStrikeThrough = layer => {
-  return layer.sketchObject.styleAttributes().NSStrikethrough;
+  return layer.sketchObject.styleAttributes().NSStrikethrough > 0;
 };
 
 const getFontDecoration = layer => {
@@ -96,6 +96,7 @@ const parseToMd = (layerName, layer, directoryPath) => {
         });
       break;
     case "paragraph-multi":
+      console.log(layer.sketchObject.styleAttributes());
       const multiParContext = getFontDecoration(layer);
       layer.text
         .trim()
