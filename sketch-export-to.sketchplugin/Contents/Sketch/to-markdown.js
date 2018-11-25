@@ -1336,6 +1336,194 @@ module.exports = {
 
 /***/ }),
 
+/***/ "./node_modules/cocoascript-class/lib/index.js":
+/*!*****************************************************!*\
+  !*** ./node_modules/cocoascript-class/lib/index.js ***!
+  \*****************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.SuperCall = undefined;
+exports.default = ObjCClass;
+
+var _runtime = __webpack_require__(/*! ./runtime.js */ "./node_modules/cocoascript-class/lib/runtime.js");
+
+exports.SuperCall = _runtime.SuperCall;
+
+// super when returnType is id and args are void
+// id objc_msgSendSuper(struct objc_super *super, SEL op, void)
+
+const SuperInit = (0, _runtime.SuperCall)(NSStringFromSelector("init"), [], { type: "@" });
+
+// Returns a real ObjC class. No need to use new.
+function ObjCClass(defn) {
+  const superclass = defn.superclass || NSObject;
+  const className = (defn.className || defn.classname || "ObjCClass") + NSUUID.UUID().UUIDString();
+  const reserved = new Set(['className', 'classname', 'superclass']);
+  var cls = MOClassDescription.allocateDescriptionForClassWithName_superclass_(className, superclass);
+  // Add each handler to the class description
+  const ivars = [];
+  for (var key in defn) {
+    const v = defn[key];
+    if (typeof v == 'function' && key !== 'init') {
+      var selector = NSSelectorFromString(key);
+      cls.addInstanceMethodWithSelector_function_(selector, v);
+    } else if (!reserved.has(key)) {
+      ivars.push(key);
+      cls.addInstanceVariableWithName_typeEncoding(key, "@");
+    }
+  }
+
+  cls.addInstanceMethodWithSelector_function_(NSSelectorFromString('init'), function () {
+    const self = SuperInit.call(this);
+    ivars.map(name => {
+      Object.defineProperty(self, name, {
+        get() {
+          return getIvar(self, name);
+        },
+        set(v) {
+          (0, _runtime.object_setInstanceVariable)(self, name, v);
+        }
+      });
+      self[name] = defn[name];
+    });
+    // If there is a passsed-in init funciton, call it now.
+    if (typeof defn.init == 'function') defn.init.call(this);
+    return self;
+  });
+
+  return cls.registerClass();
+};
+
+function getIvar(obj, name) {
+  const retPtr = MOPointer.new();
+  (0, _runtime.object_getInstanceVariable)(obj, name, retPtr);
+  return retPtr.value().retain().autorelease();
+}
+
+/***/ }),
+
+/***/ "./node_modules/cocoascript-class/lib/runtime.js":
+/*!*******************************************************!*\
+  !*** ./node_modules/cocoascript-class/lib/runtime.js ***!
+  \*******************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.SuperCall = SuperCall;
+exports.CFunc = CFunc;
+const objc_super_typeEncoding = '{objc_super="receiver"@"super_class"#}';
+
+// You can store this to call your function. this must be bound to the current instance.
+function SuperCall(selector, argTypes, returnType) {
+  const func = CFunc("objc_msgSendSuper", [{ type: '^' + objc_super_typeEncoding }, { type: ":" }, ...argTypes], returnType);
+  return function (...args) {
+    const struct = make_objc_super(this, this.superclass());
+    const structPtr = MOPointer.alloc().initWithValue_(struct);
+    return func(structPtr, selector, ...args);
+  };
+}
+
+// Recursively create a MOStruct
+function makeStruct(def) {
+  if (typeof def !== 'object' || Object.keys(def).length == 0) {
+    return def;
+  }
+  const name = Object.keys(def)[0];
+  const values = def[name];
+
+  const structure = MOStruct.structureWithName_memberNames_runtime(name, Object.keys(values), Mocha.sharedRuntime());
+
+  Object.keys(values).map(member => {
+    structure[member] = makeStruct(values[member]);
+  });
+
+  return structure;
+}
+
+function make_objc_super(self, cls) {
+  return makeStruct({
+    objc_super: {
+      receiver: self,
+      super_class: cls
+    }
+  });
+}
+
+// Due to particularities of the JS bridge, we can't call into MOBridgeSupport objects directly
+// But, we can ask key value coding to do the dirty work for us ;)
+function setKeys(o, d) {
+  const funcDict = NSMutableDictionary.dictionary();
+  funcDict.o = o;
+  Object.keys(d).map(k => funcDict.setValue_forKeyPath(d[k], "o." + k));
+}
+
+// Use any C function, not just ones with BridgeSupport
+function CFunc(name, args, retVal) {
+  function makeArgument(a) {
+    if (!a) return null;
+    const arg = MOBridgeSupportArgument.alloc().init();
+    setKeys(arg, {
+      type64: a.type
+    });
+    return arg;
+  }
+  const func = MOBridgeSupportFunction.alloc().init();
+  setKeys(func, {
+    name: name,
+    arguments: args.map(makeArgument),
+    returnValue: makeArgument(retVal)
+  });
+  return func;
+}
+
+/*
+@encode(char*) = "*"
+@encode(id) = "@"
+@encode(Class) = "#"
+@encode(void*) = "^v"
+@encode(CGRect) = "{CGRect={CGPoint=dd}{CGSize=dd}}"
+@encode(SEL) = ":"
+*/
+
+function addStructToBridgeSupport(key, structDef) {
+  // OK, so this is probably the nastiest hack in this file.
+  // We go modify MOBridgeSupportController behind its back and use kvc to add our own definition
+  // There isn't another API for this though. So the only other way would be to make a real bridgesupport file.
+  const symbols = MOBridgeSupportController.sharedController().valueForKey('symbols');
+  if (!symbols) throw Error("Something has changed within bridge support so we can't add our definitions");
+  // If someone already added this definition, don't re-register it.
+  if (symbols[key] !== null) return;
+  const def = MOBridgeSupportStruct.alloc().init();
+  setKeys(def, {
+    name: key,
+    type: structDef.type
+  });
+  symbols[key] = def;
+};
+
+// This assumes the ivar is an object type. Return value is pretty useless.
+const object_getInstanceVariable = exports.object_getInstanceVariable = CFunc("object_getInstanceVariable", [{ type: "@" }, { type: '*' }, { type: "^@" }], { type: "^{objc_ivar=}" });
+// Again, ivar is of object type
+const object_setInstanceVariable = exports.object_setInstanceVariable = CFunc("object_setInstanceVariable", [{ type: "@" }, { type: '*' }, { type: "@" }], { type: "^{objc_ivar=}" });
+
+// We need Mocha to understand what an objc_super is so we can use it as a function argument
+addStructToBridgeSupport('objc_super', { type: objc_super_typeEncoding });
+
+/***/ }),
+
 /***/ "./node_modules/promise-polyfill/lib/index.js":
 /*!****************************************************!*\
   !*** ./node_modules/promise-polyfill/lib/index.js ***!
@@ -1608,6 +1796,217 @@ module.exports = Promise;
 
 /***/ }),
 
+/***/ "./node_modules/sketch-polyfill-fetch/lib/index.js":
+/*!*********************************************************!*\
+  !*** ./node_modules/sketch-polyfill-fetch/lib/index.js ***!
+  \*********************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+/* WEBPACK VAR INJECTION */(function(Promise) {/* globals NSJSONSerialization NSJSONWritingPrettyPrinted NSDictionary NSHTTPURLResponse NSString NSASCIIStringEncoding NSUTF8StringEncoding coscript NSURL NSMutableURLRequest NSMutableData NSURLConnection */
+var _ObjCClass = __webpack_require__(/*! cocoascript-class */ "./node_modules/cocoascript-class/lib/index.js")
+
+var ObjCClass = _ObjCClass.default
+var Buffer
+try {
+  Buffer = __webpack_require__(/*! buffer */ "buffer").Buffer
+} catch (err) {}
+
+function response (httpResponse, data) {
+  var keys = []
+  var all = []
+  var headers = {}
+  var header
+
+  for (var i = 0; i < httpResponse.allHeaderFields().allKeys().length; i++) {
+    var key = httpResponse.allHeaderFields().allKeys()[i].toLowerCase()
+    var value = String(httpResponse.allHeaderFields()[key])
+    keys.push(key)
+    all.push([key, value])
+    header = headers[key]
+    headers[key] = header ? (header + ',' + value) : value
+  }
+
+  return {
+    ok: (httpResponse.statusCode() / 200 | 0) == 1, // 200-399
+    status: Number(httpResponse.statusCode()),
+    statusText: NSHTTPURLResponse.localizedStringForStatusCode(httpResponse.statusCode()),
+    useFinalURL: true,
+    url: String(httpResponse.URL().absoluteString()),
+    clone: response.bind(this, httpResponse, data),
+    text: function () {
+      return new Promise(function (resolve, reject) {
+        const str = NSString.alloc().initWithData_encoding(data, NSASCIIStringEncoding)
+        if (str) {
+          resolve(str)
+        } else {
+          reject(new Error("Couldn't parse body"))
+        }
+      })
+    },
+    json: function () {
+      return new Promise(function (resolve, reject) {
+        var str = NSString.alloc().initWithData_encoding(data, NSUTF8StringEncoding)
+        if (str) {
+          // parse errors are turned into exceptions, which cause promise to be rejected
+          var obj = JSON.parse(str)
+          resolve(obj)
+        } else {
+          reject(new Error('Could not parse JSON because it is not valid UTF-8 data.'))
+        }
+      })
+    },
+    blob: function () {
+      return Promise.resolve(data)
+    },
+    arrayBuffer: function() {
+      return Promise.resolve(Buffer.from(data))
+    },
+    headers: {
+      keys: function () { return keys },
+      entries: function () { return all },
+      get: function (n) { return headers[n.toLowerCase()] },
+      has: function (n) { return n.toLowerCase() in headers }
+    }
+  }
+}
+
+// We create one ObjC class for ourselves here
+var DelegateClass
+
+function fetch (urlString, options) {
+  options = options || {}
+  var fiber
+  try {
+    fiber = coscript.createFiber()
+  } catch (err) {
+    coscript.shouldKeepAround = true
+  }
+  return new Promise(function (resolve, reject) {
+    var url = NSURL.alloc().initWithString(urlString)
+    var request = NSMutableURLRequest.requestWithURL(url)
+    request.setHTTPMethod(options.method || 'GET')
+
+    Object.keys(options.headers || {}).forEach(function (i) {
+      request.setValue_forHTTPHeaderField(options.headers[i], i)
+    })
+
+    if (options.body) {
+      var data
+      if (typeof options.body === 'string') {
+        var str = NSString.alloc().initWithString(options.body)
+        data = str.dataUsingEncoding(NSUTF8StringEncoding)
+      } else if (Buffer && Buffer.isBuffer(options.body)) {
+        data = options.body.toNSData()
+      } else if (options.body.isKindOfClass && (options.body.isKindOfClass(NSData) == 1) ) {
+        data = options.body
+      } else {
+        var error
+        data = NSJSONSerialization.dataWithJSONObject_options_error(options.body, NSJSONWritingPrettyPrinted, error)
+        if (error != null) {
+          return reject(error)
+        }
+        request.setValue_forHTTPHeaderField('' + data.length(), 'Content-Length')
+      }
+      request.setHTTPBody(data)
+    }
+
+    if (options.cache) {
+      switch (options.cache) {
+        case 'reload':
+        case 'no-cache':
+        case 'no-store': {
+          request.setCachePolicy(1) // NSURLRequestReloadIgnoringLocalCacheData
+        }
+        case 'force-cache': {
+          request.setCachePolicy(2) // NSURLRequestReturnCacheDataElseLoad
+        }
+        case 'only-if-cached': {
+          request.setCachePolicy(3) // NSURLRequestReturnCacheDataElseLoad
+        }
+      }
+    }
+
+
+    if (!options.credentials) {
+      request.setHTTPShouldHandleCookies(false)
+    }
+
+    if (!DelegateClass) {
+      DelegateClass = ObjCClass({
+        classname: 'FetchPolyfillDelegate',
+        data: null,
+        httpResponse: null,
+        fiber: null,
+        callbacks: null,
+
+        'connectionDidFinishLoading:': function (connection) {
+          this.callbacks.succeed(this.httpResponse, this.data)
+          if (this.fiber) {
+            this.fiber.cleanup()
+          } else {
+            coscript.shouldKeepAround = false
+          }
+        },
+        'connection:didReceiveResponse:': function (connection, httpResponse) {
+          this.httpResponse = httpResponse
+          this.data = NSMutableData.alloc().init()
+        },
+        'connection:didFailWithError:': function (connection, error) {
+          this.callbacks.fail(error)
+          if (this.fiber) {
+            this.fiber.cleanup()
+          } else {
+            coscript.shouldKeepAround = false
+          }
+        },
+        'connection:didReceiveData:': function (connection, data) {
+          this.data.appendData(data)
+        }
+      })
+    }
+
+    var finished = false
+
+    function succeed(res, data) {
+      finished = true
+      resolve(response(res, data))
+    }
+
+    function fail(err) {
+      finished = true
+      reject(err)
+    }
+
+    var connectionDelegate = DelegateClass.new()
+    connectionDelegate.callbacks = NSDictionary.dictionaryWithDictionary({
+      succeed: succeed,
+      fail: fail,
+    })
+    connectionDelegate.fiber = fiber;
+
+    var connection = NSURLConnection.alloc().initWithRequest_delegate(
+      request,
+      connectionDelegate
+    )
+
+    if (fiber) {
+      fiber.onCleanup(function () {
+        if (!finished) {
+          connection.cancel()
+        }
+      })
+    }
+
+  })
+}
+
+module.exports = fetch
+
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./node_modules/promise-polyfill/lib/index.js */ "./node_modules/promise-polyfill/lib/index.js")))
+
+/***/ }),
+
 /***/ "./src/parse-layers.js":
 /*!*****************************!*\
   !*** ./src/parse-layers.js ***!
@@ -1722,7 +2121,6 @@ var parseToMd = function parseToMd(layerName, layer, directoryPath) {
       break;
 
     case "paragraph-multi":
-      console.log(layer.sketchObject.styleAttributes());
       var multiParContext = getFontDecoration(layer);
       layer.text.trim().split("\n").forEach(function (paragraph, key, content) {
         md += "".concat(multiParContext).concat(paragraph).concat(multiParContext, "\n").concat(Object.is(content.length - 1, key) ? "\n" : "");
@@ -1783,7 +2181,7 @@ function () {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/regenerator */ "./node_modules/@babel/runtime/regenerator/index.js");
+/* WEBPACK VAR INJECTION */(function(fetch) {/* harmony import */ var _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/regenerator */ "./node_modules/@babel/runtime/regenerator/index.js");
 /* harmony import */ var _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var _babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @babel/runtime/helpers/asyncToGenerator */ "./node_modules/@babel/runtime/helpers/asyncToGenerator.js");
 /* harmony import */ var _babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_1__);
@@ -1799,23 +2197,114 @@ var UI = __webpack_require__(/*! sketch/ui */ "sketch/ui");
 
 var sketchDom = __webpack_require__(/*! sketch/dom */ "sketch/dom");
 
-/* harmony default export */ __webpack_exports__["default"] = (/*#__PURE__*/(function () {
+var parseMd =
+/*#__PURE__*/
+function () {
   var _ref = _babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_1___default()(
   /*#__PURE__*/
-  _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee(context) {
-    var document, page, allLayers, saveMd, artboards, selection, ok, selectedArtboard, savePanel, result, file, directoryPath, md;
+  _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee(allLayers, selectedArtboard, directoryPath, file) {
+    var md;
     return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee$(_context) {
       while (1) {
         switch (_context.prev = _context.next) {
           case 0:
+            _context.next = 2;
+            return Object(_parse_layers__WEBPACK_IMPORTED_MODULE_3__["default"])(allLayers, selectedArtboard, directoryPath);
+
+          case 2:
+            md = _context.sent;
+            _context.next = 5;
+            return saveMd(directoryPath, file, md);
+
+          case 5:
+            UI.alert("🎉🎉", "".concat(selectedArtboard, " was successfully exported to markdown."));
+            return _context.abrupt("return", md);
+
+          case 7:
+          case "end":
+            return _context.stop();
+        }
+      }
+    }, _callee, this);
+  }));
+
+  return function parseMd(_x, _x2, _x3, _x4) {
+    return _ref.apply(this, arguments);
+  };
+}(); // save to markdown file
+
+
+var saveMd = function saveMd(path, file, content) {
+  _skpm_fs__WEBPACK_IMPORTED_MODULE_2___default.a.writeFileSync("".concat(path).concat(file), content, "utf8");
+}; // preview markdown online
+
+
+var previewOnline = function previewOnline(mdContent) {
+  // configure special modal
+  var askForPreviewAlert = COSAlertWindow.new();
+  askForPreviewAlert.setMessageText("Want to preview your markdown online?");
+  askForPreviewAlert.addButtonWithTitle("Ok");
+  askForPreviewAlert.addButtonWithTitle("Cancel"); //get answer
+
+  var resultAlert = askForPreviewAlert.runModal();
+
+  if (resultAlert != "1000") {
+    return;
+  } else {
+    fetch("https://file.io", {
+      method: "POST",
+      body: "text=".concat(mdContent)
+    }).then(function (response) {
+      return response.json();
+    }).then(function (result) {
+      return UI.alert("Preview Markdown Online", "\uD83C\uDF0E https://stackedit.io/viewer#!url=".concat(result.link));
+    }).catch(function (error) {
+      return console.log(error);
+    });
+  } // console.log(resultAlert);
+  // if (resultAlert == NSOKButton) {
+  //   console.log("ok");
+  // }
+  // try {
+  // console.log(COSAlertWindow);
+  // const listOfLanguages = ["hello"];
+  // const choice = UI.getSelectionFromUser("Which Language?", listOfLanguages);
+  // console.log(mdContent);
+  // const previewOnlineChoice = UI.message(
+  //   "Want to preview online your markdown file?"
+  // );
+  // const okPreviewOnline = previewOnlineChoice[2];
+  // if (okPreviewOnline) {
+  //   fetch("https://file.io", {
+  //     method: "POST",
+  //     body: `text=${mdContent}`
+  //   })
+  //     .then(response => response.result())
+  //     .then(result =>
+  //       UI.alert(
+  //         "Preview Markdown Online",
+  //         `🌎 https://stackedit.io/viewer#!url=${result.link}`
+  //       )
+  //     );
+  // }
+  // } catch (err) {
+  //   UI.alert("❌", ` ${err}. Apologies something went wrong with the preview.`);
+  // }
+
+};
+
+/* harmony default export */ __webpack_exports__["default"] = (/*#__PURE__*/(function () {
+  var _ref2 = _babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_1___default()(
+  /*#__PURE__*/
+  _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee2(context) {
+    var document, page, allLayers, artboards, selection, ok, selectedArtboard, savePanel, result, file, directoryPath;
+    return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee2$(_context2) {
+      while (1) {
+        switch (_context2.prev = _context2.next) {
+          case 0:
             document = sketchDom.fromNative(context.document);
             page = document.selectedPage;
-            allLayers = page.layers; // save to markdown file
-
-            saveMd = function saveMd(path, file, content) {
-              _skpm_fs__WEBPACK_IMPORTED_MODULE_2___default.a.writeFileSync("".concat(path).concat(file), content, "utf8");
-            }; // get current artboards in page selected
-
+            allLayers = page.layers; // get current artboards in page selected
 
             artboards = [];
             allLayers.forEach(function (layer) {
@@ -1824,68 +2313,49 @@ var sketchDom = __webpack_require__(/*! sketch/dom */ "sketch/dom");
               }
             }); // select at least one artboard
 
-            if (!(artboards.length === 0)) {
-              _context.next = 10;
-              break;
+            if (artboards.length === 0) {
+              UI.message("❌ You have no artboards in your page. You need at least one.");
+            } else {
+              // prompt artboard
+              selection = UI.getSelectionFromUser("Which artboard you want to export to markdown", artboards.reverse());
+              ok = selection[2];
+              selectedArtboard = artboards[selection[1]];
+
+              if (ok) {
+                // Configuring save panel
+                savePanel = NSSavePanel.savePanel();
+                savePanel.allowedFileTypes = ["md"]; // Launching alert
+
+                result = savePanel.runModal();
+
+                if (result == NSFileHandlingPanelOKButton) {
+                  file = "".concat(savePanel.nameFieldStringValue(), ".md");
+                  directoryPath = savePanel.URL().path().replace(file, ""); // remove file to get only directory
+
+                  try {
+                    parseMd(allLayers, selectedArtboard, directoryPath, file).then(function (val) {
+                      return previewOnline(val);
+                    });
+                  } catch (err) {
+                    UI.alert("❌", "Something went wrong - ".concat(err, "."));
+                  }
+                }
+              }
             }
 
-            UI.message("❌ You have no artboards in your page. You need at least one.");
-            _context.next = 31;
-            break;
-
-          case 10:
-            // prompt artboard
-            selection = UI.getSelectionFromUser("Which artboard you want to export to markdown", artboards.reverse());
-            ok = selection[2];
-            selectedArtboard = artboards[selection[1]];
-
-            if (!ok) {
-              _context.next = 31;
-              break;
-            }
-
-            // Configuring save panel
-            savePanel = NSSavePanel.savePanel();
-            savePanel.allowedFileTypes = ["md"]; // Launching alert
-
-            result = savePanel.runModal();
-
-            if (!(result == NSFileHandlingPanelOKButton)) {
-              _context.next = 31;
-              break;
-            }
-
-            file = "".concat(savePanel.nameFieldStringValue(), ".md");
-            directoryPath = savePanel.URL().path().replace(file, ""); // remove file to get only directory
-
-            _context.prev = 20;
-            _context.next = 23;
-            return Object(_parse_layers__WEBPACK_IMPORTED_MODULE_3__["default"])(allLayers, selectedArtboard, directoryPath);
-
-          case 23:
-            md = _context.sent;
-            saveMd(directoryPath, file, md);
-            UI.message("\uD83C\uDF89 ".concat(selectedArtboard, " was successfully exported to markdown \uD83C\uDF89"));
-            _context.next = 31;
-            break;
-
-          case 28:
-            _context.prev = 28;
-            _context.t0 = _context["catch"](20);
-            UI.message("\u274C ".concat(_context.t0, ". Try again."));
-
-          case 31:
+          case 6:
           case "end":
-            return _context.stop();
+            return _context2.stop();
         }
       }
-    }, _callee, this, [[20, 28]]);
+    }, _callee2, this);
   }));
 
-  return function (_x) {
-    return _ref.apply(this, arguments);
+  return function (_x5) {
+    return _ref2.apply(this, arguments);
   };
 })());
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./node_modules/sketch-polyfill-fetch/lib/index.js */ "./node_modules/sketch-polyfill-fetch/lib/index.js")))
 
 /***/ }),
 

@@ -96,7 +96,6 @@ const parseToMd = (layerName, layer, directoryPath) => {
         });
       break;
     case "paragraph-multi":
-      console.log(layer.sketchObject.styleAttributes());
       const multiParContext = getFontDecoration(layer);
       layer.text
         .trim()
