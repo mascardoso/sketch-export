@@ -3,14 +3,100 @@ import getMdContent from "./parse-layers";
 
 const UI = require("sketch/ui");
 const sketchDom = require("sketch/dom");
+let pageLayers = [];
+let selectedArtboard;
+let previewOnline;
 
-const parseMd = async (allLayers, selectedArtboard, directoryPath, file) => {
-  const md = await getMdContent(allLayers, selectedArtboard, directoryPath);
-  await saveMd(directoryPath, file, md);
-  UI.alert(
-    "🎉🎉",
-    `${selectedArtboard} was successfully exported to markdown.`
+// create save dialog
+const runSaveDialog = () => {
+  const savePanel = NSSavePanel.savePanel();
+  savePanel.allowedFileTypes = ["md"];
+
+  // Launch dialog
+  const resultSaveDialog = savePanel.runModal();
+  if (resultSaveDialog == NSFileHandlingPanelOKButton) {
+    const file = `${savePanel.nameFieldStringValue()}.md`;
+    const directoryPath = savePanel
+      .URL()
+      .path()
+      .replace(file, ""); // remove file to get only directory
+    try {
+      // parse to markdown
+      parseMd(pageLayers, selectedArtboard, directoryPath, file).then(val => {
+        if (previewOnline) {
+          saveMdPreviewOnline(val);
+        }
+      });
+    } catch (err) {
+      UI.alert("❌", `Something went wrong - ${err}.`);
+    }
+  }
+};
+
+// create export modal
+const runExportModal = artboards => {
+  const exportModal = COSAlertWindow.new();
+  exportModal.setMessageText("Export to Markdown");
+
+  // adding the main cta's
+  exportModal.addButtonWithTitle("Ok");
+  exportModal.addButtonWithTitle("Cancel");
+
+  // Creating the view
+  const viewWidth = 300;
+  const viewHeight = 130;
+  const view = NSView.alloc().initWithFrame(
+    NSMakeRect(0, 0, viewWidth, viewHeight)
   );
+  exportModal.addAccessoryView(view);
+
+  // Create Dropdown artboards
+  const dropdownArtboardLabel = NSTextField.alloc().initWithFrame(
+    NSMakeRect(0, 110, viewWidth, 22)
+  );
+  dropdownArtboardLabel.setStringValue("Select an artboard");
+  dropdownArtboardLabel.editable = false;
+  dropdownArtboardLabel.selectable = false;
+  dropdownArtboardLabel.bezeled = false;
+  dropdownArtboardLabel.drawsBackground = false;
+
+  const dropdownArtboards = NSPopUpButton.alloc().initWithFrame(
+    NSMakeRect(0, 80, viewWidth / 2, 22)
+  );
+  artboards.map(artboard => {
+    dropdownArtboards.addItemWithTitle(artboard);
+  });
+
+  // Create Checkbox for Preview
+  const checkboxPreview = NSButton.alloc().initWithFrame(
+    NSMakeRect(0, 20, viewWidth, 22)
+  );
+
+  // Setting the options for the checkbox
+  checkboxPreview.setButtonType(NSSwitchButton);
+  checkboxPreview.setBezelStyle(0);
+  checkboxPreview.setTitle("Preview the generated markdown online");
+
+  view.addSubview(dropdownArtboardLabel);
+  view.addSubview(dropdownArtboards);
+  view.addSubview(checkboxPreview);
+
+  const resultExportModal = exportModal.runModal();
+  if (resultExportModal != "1000") {
+    return;
+  } else {
+    // save selected artboard
+    selectedArtboard = artboards[dropdownArtboards.indexOfSelectedItem()];
+    // save option checkbox preview online
+    previewOnline = checkboxPreview.stringValue() == 1;
+    runSaveDialog();
+  }
+};
+
+const parseMd = async (pageLayers, artboard, directoryPath, file) => {
+  const md = await getMdContent(pageLayers, artboard, directoryPath);
+  await saveMd(directoryPath, file, md);
+  UI.alert("🎉🎉", `${artboard} was successfully exported to markdown.`);
   return md;
 };
 
@@ -19,73 +105,34 @@ const saveMd = (path, file, content) => {
   fs.writeFileSync(`${path}${file}`, content, "utf8");
 };
 
-// preview markdown online
-const previewOnline = mdContent => {
-  // configure special modal
-  const askForPreviewAlert = COSAlertWindow.new();
-  askForPreviewAlert.setMessageText("Want to preview your markdown online?");
-  askForPreviewAlert.addButtonWithTitle("Ok");
-  askForPreviewAlert.addButtonWithTitle("Cancel");
-
-  //get answer
-  const resultAlert = askForPreviewAlert.runModal();
-  if (resultAlert != "1000") {
-    return;
-  } else {
-    fetch("https://file.io", {
-      method: "POST",
-      body: `text=${mdContent}`
-    })
-      .then(response => response.json())
-      .then(result =>
-        UI.alert(
-          "Preview Markdown Online",
-          `🌎 https://stackedit.io/viewer#!url=${result.link}`
-        )
+// save preview of markdown online
+const saveMdPreviewOnline = mdContent => {
+  fetch("https://file.io", {
+    method: "POST",
+    body: `text=${mdContent}`
+  })
+    .then(response => response.json())
+    .then(result =>
+      UI.alert(
+        "Preview Markdown Online",
+        `🌎 https://stackedit.io/viewer#!url=${result.link}`
       )
-      .catch(error => console.log(error));
-  }
-  // console.log(resultAlert);
-  // if (resultAlert == NSOKButton) {
-  //   console.log("ok");
-  // }
-
-  // try {
-  // console.log(COSAlertWindow);
-  // const listOfLanguages = ["hello"];
-  // const choice = UI.getSelectionFromUser("Which Language?", listOfLanguages);
-  // console.log(mdContent);
-  // const previewOnlineChoice = UI.message(
-  //   "Want to preview online your markdown file?"
-  // );
-  // const okPreviewOnline = previewOnlineChoice[2];
-  // if (okPreviewOnline) {
-  //   fetch("https://file.io", {
-  //     method: "POST",
-  //     body: `text=${mdContent}`
-  //   })
-  //     .then(response => response.result())
-  //     .then(result =>
-  //       UI.alert(
-  //         "Preview Markdown Online",
-  //         `🌎 https://stackedit.io/viewer#!url=${result.link}`
-  //       )
-  //     );
-  // }
-  // } catch (err) {
-  //   UI.alert("❌", ` ${err}. Apologies something went wrong with the preview.`);
-  // }
+    )
+    .catch(error =>
+      UI.alert("❌", `Something occured while creating the preview - ${error}.`)
+    );
 };
 
+// main
 export default async context => {
   const document = sketchDom.fromNative(context.document);
   const page = document.selectedPage;
-  const allLayers = page.layers;
+  pageLayers = page.layers;
 
   // get current artboards in page selected
   let artboards = [];
 
-  allLayers.forEach(layer => {
+  pageLayers.map(layer => {
     if (layer.type === "Artboard") {
       artboards.push(layer.name);
     }
@@ -95,34 +142,6 @@ export default async context => {
   if (artboards.length === 0) {
     UI.message("❌ You have no artboards in your page. You need at least one.");
   } else {
-    // prompt artboard
-    const selection = UI.getSelectionFromUser(
-      "Which artboard you want to export to markdown",
-      artboards.reverse()
-    );
-    const ok = selection[2];
-    const selectedArtboard = artboards[selection[1]];
-    if (ok) {
-      // Configuring save panel
-      var savePanel = NSSavePanel.savePanel();
-      savePanel.allowedFileTypes = ["md"];
-
-      // Launching alert
-      var result = savePanel.runModal();
-      if (result == NSFileHandlingPanelOKButton) {
-        const file = `${savePanel.nameFieldStringValue()}.md`;
-        const directoryPath = savePanel
-          .URL()
-          .path()
-          .replace(file, ""); // remove file to get only directory
-        try {
-          parseMd(allLayers, selectedArtboard, directoryPath, file).then(val =>
-            previewOnline(val)
-          );
-        } catch (err) {
-          UI.alert("❌", `Something went wrong - ${err}.`);
-        }
-      }
-    }
+    runExportModal(artboards.reverse());
   }
 };

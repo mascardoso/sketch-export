@@ -2197,19 +2197,91 @@ var UI = __webpack_require__(/*! sketch/ui */ "sketch/ui");
 
 var sketchDom = __webpack_require__(/*! sketch/dom */ "sketch/dom");
 
+var pageLayers = [];
+var selectedArtboard;
+var previewOnline; // create save dialog
+
+var runSaveDialog = function runSaveDialog() {
+  var savePanel = NSSavePanel.savePanel();
+  savePanel.allowedFileTypes = ["md"]; // Launch dialog
+
+  var resultSaveDialog = savePanel.runModal();
+
+  if (resultSaveDialog == NSFileHandlingPanelOKButton) {
+    var file = "".concat(savePanel.nameFieldStringValue(), ".md");
+    var directoryPath = savePanel.URL().path().replace(file, ""); // remove file to get only directory
+
+    try {
+      // parse to markdown
+      parseMd(pageLayers, selectedArtboard, directoryPath, file).then(function (val) {
+        if (previewOnline) {
+          saveMdPreviewOnline(val);
+        }
+      });
+    } catch (err) {
+      UI.alert("❌", "Something went wrong - ".concat(err, "."));
+    }
+  }
+}; // create export modal
+
+
+var runExportModal = function runExportModal(artboards) {
+  var exportModal = COSAlertWindow.new();
+  exportModal.setMessageText("Export to Markdown"); // adding the main cta's
+
+  exportModal.addButtonWithTitle("Ok");
+  exportModal.addButtonWithTitle("Cancel"); // Creating the view
+
+  var viewWidth = 300;
+  var viewHeight = 130;
+  var view = NSView.alloc().initWithFrame(NSMakeRect(0, 0, viewWidth, viewHeight));
+  exportModal.addAccessoryView(view); // Create Dropdown artboards
+
+  var dropdownArtboardLabel = NSTextField.alloc().initWithFrame(NSMakeRect(0, 110, viewWidth, 22));
+  dropdownArtboardLabel.setStringValue("Select an artboard");
+  dropdownArtboardLabel.editable = false;
+  dropdownArtboardLabel.selectable = false;
+  dropdownArtboardLabel.bezeled = false;
+  dropdownArtboardLabel.drawsBackground = false;
+  var dropdownArtboards = NSPopUpButton.alloc().initWithFrame(NSMakeRect(0, 80, viewWidth / 2, 22));
+  artboards.map(function (artboard) {
+    dropdownArtboards.addItemWithTitle(artboard);
+  }); // Create Checkbox for Preview
+
+  var checkboxPreview = NSButton.alloc().initWithFrame(NSMakeRect(0, 20, viewWidth, 22)); // Setting the options for the checkbox
+
+  checkboxPreview.setButtonType(NSSwitchButton);
+  checkboxPreview.setBezelStyle(0);
+  checkboxPreview.setTitle("Preview the generated markdown online");
+  view.addSubview(dropdownArtboardLabel);
+  view.addSubview(dropdownArtboards);
+  view.addSubview(checkboxPreview);
+  var resultExportModal = exportModal.runModal();
+
+  if (resultExportModal != "1000") {
+    return;
+  } else {
+    // save selected artboard
+    selectedArtboard = artboards[dropdownArtboards.indexOfSelectedItem()]; // save option checkbox preview online
+
+    previewOnline = checkboxPreview.stringValue() == 1;
+    runSaveDialog();
+  }
+};
+
 var parseMd =
 /*#__PURE__*/
 function () {
   var _ref = _babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_1___default()(
   /*#__PURE__*/
-  _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee(allLayers, selectedArtboard, directoryPath, file) {
+  _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee(pageLayers, artboard, directoryPath, file) {
     var md;
     return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee$(_context) {
       while (1) {
         switch (_context.prev = _context.next) {
           case 0:
             _context.next = 2;
-            return Object(_parse_layers__WEBPACK_IMPORTED_MODULE_3__["default"])(allLayers, selectedArtboard, directoryPath);
+            return Object(_parse_layers__WEBPACK_IMPORTED_MODULE_3__["default"])(pageLayers, artboard, directoryPath);
 
           case 2:
             md = _context.sent;
@@ -2217,7 +2289,7 @@ function () {
             return saveMd(directoryPath, file, md);
 
           case 5:
-            UI.alert("🎉🎉", "".concat(selectedArtboard, " was successfully exported to markdown."));
+            UI.alert("🎉🎉", "".concat(artboard, " was successfully exported to markdown."));
             return _context.abrupt("return", md);
 
           case 7:
@@ -2236,78 +2308,38 @@ function () {
 
 var saveMd = function saveMd(path, file, content) {
   _skpm_fs__WEBPACK_IMPORTED_MODULE_2___default.a.writeFileSync("".concat(path).concat(file), content, "utf8");
-}; // preview markdown online
+}; // save preview of markdown online
 
 
-var previewOnline = function previewOnline(mdContent) {
-  // configure special modal
-  var askForPreviewAlert = COSAlertWindow.new();
-  askForPreviewAlert.setMessageText("Want to preview your markdown online?");
-  askForPreviewAlert.addButtonWithTitle("Ok");
-  askForPreviewAlert.addButtonWithTitle("Cancel"); //get answer
+var saveMdPreviewOnline = function saveMdPreviewOnline(mdContent) {
+  fetch("https://file.io", {
+    method: "POST",
+    body: "text=".concat(mdContent)
+  }).then(function (response) {
+    return response.json();
+  }).then(function (result) {
+    return UI.alert("Preview Markdown Online", "\uD83C\uDF0E https://stackedit.io/viewer#!url=".concat(result.link));
+  }).catch(function (error) {
+    return UI.alert("❌", "Something occured while creating the preview - ".concat(error, "."));
+  });
+}; // main
 
-  var resultAlert = askForPreviewAlert.runModal();
-
-  if (resultAlert != "1000") {
-    return;
-  } else {
-    fetch("https://file.io", {
-      method: "POST",
-      body: "text=".concat(mdContent)
-    }).then(function (response) {
-      return response.json();
-    }).then(function (result) {
-      return UI.alert("Preview Markdown Online", "\uD83C\uDF0E https://stackedit.io/viewer#!url=".concat(result.link));
-    }).catch(function (error) {
-      return console.log(error);
-    });
-  } // console.log(resultAlert);
-  // if (resultAlert == NSOKButton) {
-  //   console.log("ok");
-  // }
-  // try {
-  // console.log(COSAlertWindow);
-  // const listOfLanguages = ["hello"];
-  // const choice = UI.getSelectionFromUser("Which Language?", listOfLanguages);
-  // console.log(mdContent);
-  // const previewOnlineChoice = UI.message(
-  //   "Want to preview online your markdown file?"
-  // );
-  // const okPreviewOnline = previewOnlineChoice[2];
-  // if (okPreviewOnline) {
-  //   fetch("https://file.io", {
-  //     method: "POST",
-  //     body: `text=${mdContent}`
-  //   })
-  //     .then(response => response.result())
-  //     .then(result =>
-  //       UI.alert(
-  //         "Preview Markdown Online",
-  //         `🌎 https://stackedit.io/viewer#!url=${result.link}`
-  //       )
-  //     );
-  // }
-  // } catch (err) {
-  //   UI.alert("❌", ` ${err}. Apologies something went wrong with the preview.`);
-  // }
-
-};
 
 /* harmony default export */ __webpack_exports__["default"] = (/*#__PURE__*/(function () {
   var _ref2 = _babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_1___default()(
   /*#__PURE__*/
   _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee2(context) {
-    var document, page, allLayers, artboards, selection, ok, selectedArtboard, savePanel, result, file, directoryPath;
+    var document, page, artboards;
     return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee2$(_context2) {
       while (1) {
         switch (_context2.prev = _context2.next) {
           case 0:
             document = sketchDom.fromNative(context.document);
             page = document.selectedPage;
-            allLayers = page.layers; // get current artboards in page selected
+            pageLayers = page.layers; // get current artboards in page selected
 
             artboards = [];
-            allLayers.forEach(function (layer) {
+            pageLayers.map(function (layer) {
               if (layer.type === "Artboard") {
                 artboards.push(layer.name);
               }
@@ -2316,31 +2348,7 @@ var previewOnline = function previewOnline(mdContent) {
             if (artboards.length === 0) {
               UI.message("❌ You have no artboards in your page. You need at least one.");
             } else {
-              // prompt artboard
-              selection = UI.getSelectionFromUser("Which artboard you want to export to markdown", artboards.reverse());
-              ok = selection[2];
-              selectedArtboard = artboards[selection[1]];
-
-              if (ok) {
-                // Configuring save panel
-                savePanel = NSSavePanel.savePanel();
-                savePanel.allowedFileTypes = ["md"]; // Launching alert
-
-                result = savePanel.runModal();
-
-                if (result == NSFileHandlingPanelOKButton) {
-                  file = "".concat(savePanel.nameFieldStringValue(), ".md");
-                  directoryPath = savePanel.URL().path().replace(file, ""); // remove file to get only directory
-
-                  try {
-                    parseMd(allLayers, selectedArtboard, directoryPath, file).then(function (val) {
-                      return previewOnline(val);
-                    });
-                  } catch (err) {
-                    UI.alert("❌", "Something went wrong - ".concat(err, "."));
-                  }
-                }
-              }
+              runExportModal(artboards.reverse());
             }
 
           case 6:
