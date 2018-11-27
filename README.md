@@ -1,8 +1,12 @@
-![sketch export to](./assets/icon-big.jpg | width=100)
+![sketch export to](./assets/icon-big.jpg)
 
 # sketch-export-to
 
-![preview](./assets/preview.gif | width=800)
+![preview](./assets/preview.gif)
+
+## Why
+
+Sketch as the source of truth for UI guidelines. The idea behind it was to generate either markdown or json from a artboard, fetch this data and push it to a site.
 
 ## skpm
 
