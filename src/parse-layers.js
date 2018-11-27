@@ -30,19 +30,21 @@ const getFontDecoration = layer => {
   }
 };
 
+// process the layers
 const processLayers = (layer, directoryPath) => {
-  // process groups but ignore images group layers or symbols
+  // process grouped layers but ignore grouped layers named image-*
   if (layer.type === "Group" && !layer.name.match(imgRegex)) {
     layer.layers.reverse().map(layer => {
       processLayers(layer);
     });
   } else {
-    parseToMd(layer.name, layer, directoryPath);
+    parseLayerToMd(layer.name, layer, directoryPath);
   }
 };
 
-const parseToMd = (layerName, layer, directoryPath) => {
-  // if layer starts with image-* set the layerName to image case
+// parse layer to markdown
+const parseLayerToMd = (layerName, layer, directoryPath) => {
+  // special case: if layer starts with image-* set the layerName to image case
   layerName = layerName.match(imgRegex) ? "image" : layerName;
 
   switch (layerName) {
@@ -112,6 +114,7 @@ const parseToMd = (layerName, layer, directoryPath) => {
   }
 };
 
+// main
 const getMdContent = async (allLayers, artboardName, directoryPath) => {
   await allLayers.map(layer => {
     if (layer.type === "Artboard" && layer.name === artboardName) {
