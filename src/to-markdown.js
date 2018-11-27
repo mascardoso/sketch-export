@@ -7,6 +7,14 @@ let pageLayers = [];
 let selectedArtboard;
 let previewOnline;
 
+//create modal icon
+const createPluginModalIcon = () => {
+  const exportModalIconPath = context.plugin
+    .urlForResourceNamed("icon.png")
+    .path();
+  return NSImage.alloc().initByReferencingFile(exportModalIconPath);
+};
+
 // create save dialog
 const runSaveDialog = () => {
   const savePanel = NSSavePanel.savePanel();
@@ -34,9 +42,10 @@ const runSaveDialog = () => {
 };
 
 // create export modal
-const runExportModal = artboards => {
+const runExportModal = (context, artboards) => {
   const exportModal = COSAlertWindow.new();
   exportModal.setMessageText("Export to Markdown");
+  exportModal.setIcon(createPluginModalIcon());
 
   // adding the main cta's
   exportModal.addButtonWithTitle("Ok");
@@ -93,10 +102,39 @@ const runExportModal = artboards => {
   }
 };
 
+// create export modal
+const runPreviewModal = url => {
+  const previewModal = COSAlertWindow.new();
+  previewModal.setMessageText("Preview Markdown Online");
+  previewModal.setIcon(createPluginModalIcon());
+
+  // adding the main cta's
+  previewModal.addButtonWithTitle("Go");
+  previewModal.addButtonWithTitle("Cancel");
+
+  // Creating the view
+  const viewWidth = 300;
+  const view = NSView.alloc().initWithFrame(NSMakeRect(0, 0, viewWidth, 0));
+  previewModal.addAccessoryView(view);
+
+  const resultPreviewModal = previewModal.runModal();
+  if (resultPreviewModal != "1000") {
+    return;
+  } else {
+    // open link
+    NSWorkspace.sharedWorkspace().openURL(
+      NSURL.URLWithString(`https://stackedit.io/viewer#!url=${url}`)
+    );
+  }
+};
+
 const parseMd = async (pageLayers, artboard, directoryPath, file) => {
   const md = await getMdContent(pageLayers, artboard, directoryPath);
   await saveMd(directoryPath, file, md);
-  UI.alert("🎉🎉", `${artboard} was successfully exported to markdown.`);
+  UI.alert(
+    "Export complete.",
+    `🎉🎉 ${artboard} was successfully exported to markdown.`
+  );
   return md;
 };
 
@@ -112,12 +150,7 @@ const saveMdPreviewOnline = mdContent => {
     body: `text=${mdContent}`
   })
     .then(response => response.json())
-    .then(result =>
-      UI.alert(
-        "Preview Markdown Online",
-        `🌎 https://stackedit.io/viewer#!url=${result.link}`
-      )
-    )
+    .then(result => runPreviewModal(result.link))
     .catch(error =>
       UI.alert("❌", `Something occured while creating the preview - ${error}.`)
     );
@@ -142,6 +175,6 @@ export default async context => {
   if (artboards.length === 0) {
     UI.message("❌ You have no artboards in your page. You need at least one.");
   } else {
-    runExportModal(artboards.reverse());
+    runExportModal(context, artboards.reverse());
   }
 };

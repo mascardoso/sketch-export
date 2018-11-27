@@ -2054,21 +2054,23 @@ var getFontDecoration = function getFontDecoration(layer) {
   } else {
     return "";
   }
-};
+}; // process the layers
+
 
 var processLayers = function processLayers(layer, directoryPath) {
-  // process groups but ignore images group layers or symbols
+  // process grouped layers but ignore grouped layers named image-*
   if (layer.type === "Group" && !layer.name.match(imgRegex)) {
     layer.layers.reverse().map(function (layer) {
       processLayers(layer);
     });
   } else {
-    parseToMd(layer.name, layer, directoryPath);
+    parseLayerToMd(layer.name, layer, directoryPath);
   }
-};
+}; // parse layer to markdown
 
-var parseToMd = function parseToMd(layerName, layer, directoryPath) {
-  // if layer starts with image-* set the layerName to image case
+
+var parseLayerToMd = function parseLayerToMd(layerName, layer, directoryPath) {
+  // special case: if layer starts with image-* set the layerName to image case
   layerName = layerName.match(imgRegex) ? "image" : layerName;
 
   switch (layerName) {
@@ -2131,7 +2133,8 @@ var parseToMd = function parseToMd(layerName, layer, directoryPath) {
       var simpleParContext = getFontDecoration(layer);
       md += "".concat(simpleParContext).concat(layer.text.trim()).concat(simpleParContext, "\n\n");
   }
-};
+}; // main
+
 
 var getMdContent =
 /*#__PURE__*/
@@ -2199,7 +2202,13 @@ var sketchDom = __webpack_require__(/*! sketch/dom */ "sketch/dom");
 
 var pageLayers = [];
 var selectedArtboard;
-var previewOnline; // create save dialog
+var previewOnline; //create modal icon
+
+var createPluginModalIcon = function createPluginModalIcon() {
+  var exportModalIconPath = context.plugin.urlForResourceNamed("icon.png").path();
+  return NSImage.alloc().initByReferencingFile(exportModalIconPath);
+}; // create save dialog
+
 
 var runSaveDialog = function runSaveDialog() {
   var savePanel = NSSavePanel.savePanel();
@@ -2225,9 +2234,10 @@ var runSaveDialog = function runSaveDialog() {
 }; // create export modal
 
 
-var runExportModal = function runExportModal(artboards) {
+var runExportModal = function runExportModal(context, artboards) {
   var exportModal = COSAlertWindow.new();
-  exportModal.setMessageText("Export to Markdown"); // adding the main cta's
+  exportModal.setMessageText("Export to Markdown");
+  exportModal.setIcon(createPluginModalIcon()); // adding the main cta's
 
   exportModal.addButtonWithTitle("Ok");
   exportModal.addButtonWithTitle("Cancel"); // Creating the view
@@ -2267,6 +2277,28 @@ var runExportModal = function runExportModal(artboards) {
     previewOnline = checkboxPreview.stringValue() == 1;
     runSaveDialog();
   }
+}; // create export modal
+
+
+var runPreviewModal = function runPreviewModal(url) {
+  var previewModal = COSAlertWindow.new();
+  previewModal.setMessageText("Preview Markdown Online");
+  previewModal.setIcon(createPluginModalIcon()); // adding the main cta's
+
+  previewModal.addButtonWithTitle("Go");
+  previewModal.addButtonWithTitle("Cancel"); // Creating the view
+
+  var viewWidth = 300;
+  var view = NSView.alloc().initWithFrame(NSMakeRect(0, 0, viewWidth, 0));
+  previewModal.addAccessoryView(view);
+  var resultPreviewModal = previewModal.runModal();
+
+  if (resultPreviewModal != "1000") {
+    return;
+  } else {
+    // open link
+    NSWorkspace.sharedWorkspace().openURL(NSURL.URLWithString("https://stackedit.io/viewer#!url=".concat(url)));
+  }
 };
 
 var parseMd =
@@ -2289,7 +2321,7 @@ function () {
             return saveMd(directoryPath, file, md);
 
           case 5:
-            UI.alert("🎉🎉", "".concat(artboard, " was successfully exported to markdown."));
+            UI.alert("Export complete.", "\uD83C\uDF89\uD83C\uDF89 ".concat(artboard, " was successfully exported to markdown."));
             return _context.abrupt("return", md);
 
           case 7:
@@ -2318,7 +2350,7 @@ var saveMdPreviewOnline = function saveMdPreviewOnline(mdContent) {
   }).then(function (response) {
     return response.json();
   }).then(function (result) {
-    return UI.alert("Preview Markdown Online", "\uD83C\uDF0E https://stackedit.io/viewer#!url=".concat(result.link));
+    return runPreviewModal(result.link);
   }).catch(function (error) {
     return UI.alert("❌", "Something occured while creating the preview - ".concat(error, "."));
   });
@@ -2348,7 +2380,7 @@ var saveMdPreviewOnline = function saveMdPreviewOnline(mdContent) {
             if (artboards.length === 0) {
               UI.message("❌ You have no artboards in your page. You need at least one.");
             } else {
-              runExportModal(artboards.reverse());
+              runExportModal(context, artboards.reverse());
             }
 
           case 6:
