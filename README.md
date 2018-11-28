@@ -8,6 +8,11 @@
 
 Sketch as the source of truth for UI guidelines. The idea behind it was to generate either markdown or json from a artboard, fetch this data and push it to a site.
 
+## Installation
+
+_Tested on Sketch 52+_
+_Double-click on sketch-export-to.sketchplugin_ to install in sketch
+
 ## The catch
 
 - As a start take a look at the _examples > ui.sketch file_
