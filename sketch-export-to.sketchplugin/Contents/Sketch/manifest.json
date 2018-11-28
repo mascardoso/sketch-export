@@ -15,7 +15,8 @@
       "to-markdown-identifier"
     ]
   },
-  "version": "0.1.0",
+  "version": "1.0.0",
+  "description": "Export an artboard layers to json or markdown",
   "name": "sketch-export-to",
   "identifier": "sketch-export-to",
   "disableCocoaScriptPreprocessor": true,
