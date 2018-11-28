@@ -11,7 +11,8 @@ Sketch as the source of truth for UI guidelines. The idea behind it was to gener
 ## Installation
 
 _Tested on Sketch 52+_
-_Double-click on sketch-export-to.sketchplugin_ to install in sketch
+
+_Double-click on **sketch-export-to.sketchplugin**_ to install in sketch
 
 ## The catch
 
