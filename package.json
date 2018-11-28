@@ -1,5 +1,6 @@
 {
   "name": "sketch-export-to",
+  "description": "Export an artboard layers to json or markdown",
   "version": "0.1.0",
   "engines": {
     "sketch": ">=3.0"
