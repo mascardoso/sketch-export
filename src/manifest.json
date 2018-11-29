@@ -7,10 +7,15 @@
       "name": "Artboard -> Markdown",
       "identifier": "to-markdown-identifier",
       "script": "./to-markdown.js"
+    },
+    {
+      "name": "Artboard -> JSON",
+      "identifier": "to-json-identifier",
+      "script": "./to-json.js"
     }
   ],
   "menu": {
     "title": "Export Sketch",
-    "items": ["to-markdown-identifier"]
+    "items": ["to-markdown-identifier", "to-json-identifier"]
   }
 }
