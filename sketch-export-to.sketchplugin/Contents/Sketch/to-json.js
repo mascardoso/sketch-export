@@ -86,7 +86,7 @@ var exports =
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = "./src/to-markdown.js");
+/******/ 	return __webpack_require__(__webpack_require__.s = "./src/to-json.js");
 /******/ })
 /************************************************************************/
 /******/ ({
@@ -2406,10 +2406,10 @@ function () {
 
 /***/ }),
 
-/***/ "./src/to-markdown.js":
-/*!****************************!*\
-  !*** ./src/to-markdown.js ***!
-  \****************************/
+/***/ "./src/to-json.js":
+/*!************************!*\
+  !*** ./src/to-json.js ***!
+  \************************/
 /*! exports provided: default */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
@@ -2417,8 +2417,8 @@ function () {
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _core__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./core */ "./src/core.js");
 
-var fileType = "md";
-var fileMarkup = "markdown"; // main
+var fileType = "json";
+var fileMarkup = "json"; // main
 
 /* harmony default export */ __webpack_exports__["default"] = (function (context) {
   Object(_core__WEBPACK_IMPORTED_MODULE_0__["default"])(context, fileType, fileMarkup);
@@ -2468,4 +2468,4 @@ module.exports = require("sketch/ui");
 }
 that['onRun'] = __skpm_run.bind(this, 'default')
 
-//# sourceMappingURL=to-markdown.js.map
+//# sourceMappingURL=to-json.js.map

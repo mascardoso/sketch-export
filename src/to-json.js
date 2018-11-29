@@ -1,7 +1,7 @@
 import exportTo from "./core";
 
-const fileType = "md";
-const fileMarkup = "markdown";
+const fileType = "json";
+const fileMarkup = "json";
 
 // main
 export default context => {
