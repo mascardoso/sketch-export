@@ -2224,30 +2224,18 @@ var exportTo = function exportTo(context, fileType, fileMarkup) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-var sketchDom = __webpack_require__(/*! sketch/dom */ "sketch/dom");
+/* harmony import */ var _utils__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./utils */ "./src/parse-layers/utils.js");
 
-var getFontName = function getFontName(layer) {
-  return layer.sketchObject.fontPostscriptName();
-};
 
-var isBold = function isBold(layer) {
-  return getFontName(layer).match(/(Bold|bold)$/);
-};
+var sketchDom = __webpack_require__(/*! sketch/dom */ "sketch/dom"); // check font decoration syntax for markdown
 
-var isItalic = function isItalic(layer) {
-  return getFontName(layer).match(/(Italic|italic|Oblique|oblique)$/);
-};
 
-var isStrikeThrough = function isStrikeThrough(layer) {
-  return layer.sketchObject.styleAttributes().NSStrikethrough > 0;
-};
-
-var getFontDecoration = function getFontDecoration(layer) {
-  if (isBold(layer)) {
+var getFontDecorationMd = function getFontDecorationMd(layer) {
+  if (Object(_utils__WEBPACK_IMPORTED_MODULE_0__["isBold"])(layer)) {
     return "**";
-  } else if (isItalic(layer)) {
+  } else if (Object(_utils__WEBPACK_IMPORTED_MODULE_0__["isItalic"])(layer)) {
     return "*";
-  } else if (isStrikeThrough(layer)) {
+  } else if (Object(_utils__WEBPACK_IMPORTED_MODULE_0__["isStrikeThrough"])(layer)) {
     return "~~";
   } else {
     return "";
@@ -2256,7 +2244,7 @@ var getFontDecoration = function getFontDecoration(layer) {
 
 
 var addMarkdownSyntax = function addMarkdownSyntax(layerName, layer, directoryPath) {
-  var layerMd; // special case: if layer starts with image-* set the layerName to image case
+  var layerMd = ""; // special case: if layer starts with image-* set the layerName to image case
 
   layerName = layerName.match(/^image-/) ? "image" : layerName;
 
@@ -2310,14 +2298,14 @@ var addMarkdownSyntax = function addMarkdownSyntax(layerName, layer, directoryPa
       break;
 
     case "paragraph-multi":
-      var multiParContext = getFontDecoration(layer);
+      var multiParContext = getFontDecorationMd(layer);
       layer.text.trim().split("\n").forEach(function (paragraph, key, content) {
         layerMd += "".concat(multiParContext).concat(paragraph).concat(multiParContext, "\n").concat(Object.is(content.length - 1, key) ? "\n" : "");
       });
       break;
 
     case "paragraph":
-      var simpleParContext = getFontDecoration(layer);
+      var simpleParContext = getFontDecorationMd(layer);
       layerMd += "".concat(simpleParContext).concat(layer.text.trim()).concat(simpleParContext, "\n\n");
       break;
   }
@@ -2327,8 +2315,7 @@ var addMarkdownSyntax = function addMarkdownSyntax(layerName, layer, directoryPa
 
 
 var parseLayerToMd = function parseLayerToMd(layerName, layer, directoryPath) {
-  return addMarkdownSyntax(layerName, layer, directoryPath); // console.log(result);
-  // return result;
+  return addMarkdownSyntax(layerName, layer, directoryPath);
 };
 
 /* harmony default export */ __webpack_exports__["default"] = (parseLayerToMd);
@@ -2386,10 +2373,9 @@ function () {
             });
 
           case 2:
-            console.log(contentParsed);
             return _context.abrupt("return", contentParsed);
 
-          case 4:
+          case 3:
           case "end":
             return _context.stop();
         }
@@ -2403,6 +2389,38 @@ function () {
 }();
 
 /* harmony default export */ __webpack_exports__["default"] = (getParsedContent);
+
+/***/ }),
+
+/***/ "./src/parse-layers/utils.js":
+/*!***********************************!*\
+  !*** ./src/parse-layers/utils.js ***!
+  \***********************************/
+/*! exports provided: isBold, isItalic, isStrikeThrough */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "isBold", function() { return isBold; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "isItalic", function() { return isItalic; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "isStrikeThrough", function() { return isStrikeThrough; });
+var getFontName = function getFontName(layer) {
+  return layer.sketchObject.fontPostscriptName();
+};
+
+var isBold = function isBold(layer) {
+  return getFontName(layer).match(/(Bold|bold)$/);
+};
+
+var isItalic = function isItalic(layer) {
+  return getFontName(layer).match(/(Italic|italic|Oblique|oblique)$/);
+};
+
+var isStrikeThrough = function isStrikeThrough(layer) {
+  return layer.sketchObject.styleAttributes().NSStrikethrough > 0;
+};
+
+
 
 /***/ }),
 

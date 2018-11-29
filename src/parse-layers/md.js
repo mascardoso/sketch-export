@@ -1,22 +1,9 @@
+import { isBold, isItalic, isStrikeThrough } from "./utils";
+
 const sketchDom = require("sketch/dom");
 
-const getFontName = layer => {
-  return layer.sketchObject.fontPostscriptName();
-};
-
-const isBold = layer => {
-  return getFontName(layer).match(/(Bold|bold)$/);
-};
-
-const isItalic = layer => {
-  return getFontName(layer).match(/(Italic|italic|Oblique|oblique)$/);
-};
-
-const isStrikeThrough = layer => {
-  return layer.sketchObject.styleAttributes().NSStrikethrough > 0;
-};
-
-const getFontDecoration = layer => {
+// check font decoration syntax for markdown
+const getFontDecorationMd = layer => {
   if (isBold(layer)) {
     return "**";
   } else if (isItalic(layer)) {
@@ -30,7 +17,8 @@ const getFontDecoration = layer => {
 
 // add markdown syntax
 const addMarkdownSyntax = (layerName, layer, directoryPath) => {
-  let layerMd;
+  let layerMd = "";
+
   // special case: if layer starts with image-* set the layerName to image case
   layerName = layerName.match(/^image-/) ? "image" : layerName;
 
@@ -85,7 +73,7 @@ const addMarkdownSyntax = (layerName, layer, directoryPath) => {
         });
       break;
     case "paragraph-multi":
-      const multiParContext = getFontDecoration(layer);
+      const multiParContext = getFontDecorationMd(layer);
       layer.text
         .trim()
         .split("\n")
@@ -96,7 +84,7 @@ const addMarkdownSyntax = (layerName, layer, directoryPath) => {
         });
       break;
     case "paragraph":
-      const simpleParContext = getFontDecoration(layer);
+      const simpleParContext = getFontDecorationMd(layer);
       layerMd += `${simpleParContext}${layer.text.trim()}${simpleParContext}\n\n`;
       break;
   }
@@ -106,8 +94,6 @@ const addMarkdownSyntax = (layerName, layer, directoryPath) => {
 // parse layer to markdown
 const parseLayerToMd = (layerName, layer, directoryPath) => {
   return addMarkdownSyntax(layerName, layer, directoryPath);
-  // console.log(result);
-  // return result;
 };
 
 export default parseLayerToMd;

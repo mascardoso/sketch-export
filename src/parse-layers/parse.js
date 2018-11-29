@@ -23,7 +23,6 @@ const getParsedContent = async (allLayers, artboardName, directoryPath) => {
       });
     }
   });
-  console.log(contentParsed);
   return contentParsed;
 };
 

@@ -13,3 +13,5 @@ const isItalic = layer => {
 const isStrikeThrough = layer => {
   return layer.sketchObject.styleAttributes().NSStrikethrough > 0;
 };
+
+export { isBold, isItalic, isStrikeThrough };
