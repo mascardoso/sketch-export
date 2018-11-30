@@ -1,6 +1,4 @@
-import { isBold, isItalic, isStrikeThrough } from "./utils";
-
-const sketchDom = require("sketch/dom");
+import { exportJpg, isBold, isItalic, isStrikeThrough } from "./utils";
 
 // check font decoration syntax for markdown
 const getFontDecorationMd = layer => {
@@ -36,18 +34,14 @@ const addMarkdownSyntax = (layerName, layer, directoryPath) => {
       layerMd += `#### ${layer.text.trim()}\n`;
       break;
     case "blockquote":
-      layerMd += `> ${layer.text.trim()}\n\n`;
+      const blockquoteContext = getFontDecorationMd(layer);
+      layerMd += `> ${blockquoteContext}${layer.text.trim()}${blockquoteContext}\n\n`;
       break;
     case "horizontal-rule":
       layerMd += `***\n\n`;
       break;
     case "image":
-      sketchDom.export(layer, {
-        formats: "jpg",
-        output: `${directoryPath}/assets/`,
-        overwriting: true,
-        scales: "1"
-      });
+      exportJpg(layer, `${directoryPath}/assets/`);
       layerMd += `![](./assets/${layer.name}.jpg)\n\n`;
       break;
     case "list-unordered":

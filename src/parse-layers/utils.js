@@ -1,3 +1,14 @@
+const sketchDom = require("sketch/dom");
+
+const exportJpg = (layer, outputFolder) => {
+  sketchDom.export(layer, {
+    formats: "jpg",
+    output: outputFolder,
+    overwriting: true,
+    scales: "1"
+  });
+};
+
 const getFontName = layer => {
   return layer.sketchObject.fontPostscriptName();
 };
@@ -14,4 +25,4 @@ const isStrikeThrough = layer => {
   return layer.sketchObject.styleAttributes().NSStrikethrough > 0;
 };
 
-export { isBold, isItalic, isStrikeThrough };
+export { exportJpg, isBold, isItalic, isStrikeThrough };

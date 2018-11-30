@@ -1,4 +1,4 @@
-import { isBold, isItalic, isStrikeThrough } from "./utils";
+import { exportJpg, isBold, isItalic, isStrikeThrough } from "./utils";
 
 // check font decoration syntax for markdown
 const getFontDecoration = layer => {
@@ -16,22 +16,35 @@ const getFontDecoration = layer => {
 // add layer string
 const addLayerString = (layerName, layer, directoryPath) => {
   let layerData;
+
+  // special case: if layer starts with image-* set the layerName to image case
+  layerName = layerName.match(/^image-/) ? "image" : layerName;
+
   switch (layerName) {
     case "heading1":
     case "heading2":
     case "heading3":
     case "heading4":
-    case "blockquote":
       layerData = {
-        type: layerName,
+        type: "heading",
+        level: parseInt(layerName.replace("heading", "")),
         text: layer.text.trim()
       };
       break;
+    case "blockquote":
     case "paragraph":
       layerData = {
         type: layerName,
         text: layer.text.trim(),
         decoration: getFontDecoration(layer)
+      };
+      break;
+    case "image":
+      console.log(layer);
+      exportJpg(layer, `${directoryPath}/assets/`);
+      layerData = {
+        type: "image",
+        name: layer.name
       };
       break;
   }

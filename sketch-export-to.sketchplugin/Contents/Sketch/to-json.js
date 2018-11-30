@@ -2241,25 +2241,37 @@ var getFontDecoration = function getFontDecoration(layer) {
 
 
 var addLayerString = function addLayerString(layerName, layer, directoryPath) {
-  var layerData;
+  var layerData; // special case: if layer starts with image-* set the layerName to image case
+
+  layerName = layerName.match(/^image-/) ? "image" : layerName;
 
   switch (layerName) {
     case "heading1":
     case "heading2":
     case "heading3":
     case "heading4":
-    case "blockquote":
       layerData = {
-        type: layerName,
+        type: "heading",
+        level: parseInt(layerName.replace("heading", "")),
         text: layer.text.trim()
       };
       break;
 
+    case "blockquote":
     case "paragraph":
       layerData = {
         type: layerName,
         text: layer.text.trim(),
         decoration: getFontDecoration(layer)
+      };
+      break;
+
+    case "image":
+      console.log(layer);
+      Object(_utils__WEBPACK_IMPORTED_MODULE_0__["exportJpg"])(layer, "".concat(directoryPath, "/assets/"));
+      layerData = {
+        type: "image",
+        name: layer.name
       };
       break;
   }
@@ -2286,10 +2298,7 @@ var parseLayerToJson = function parseLayerToJson(layerName, layer, directoryPath
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _utils__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./utils */ "./src/parse-layers/utils.js");
-
-
-var sketchDom = __webpack_require__(/*! sketch/dom */ "sketch/dom"); // check font decoration syntax for markdown
-
+ // check font decoration syntax for markdown
 
 var getFontDecorationMd = function getFontDecorationMd(layer) {
   if (Object(_utils__WEBPACK_IMPORTED_MODULE_0__["isBold"])(layer)) {
@@ -2327,7 +2336,8 @@ var addMarkdownSyntax = function addMarkdownSyntax(layerName, layer, directoryPa
       break;
 
     case "blockquote":
-      layerMd += "> ".concat(layer.text.trim(), "\n\n");
+      var blockquoteContext = getFontDecorationMd(layer);
+      layerMd += "> ".concat(blockquoteContext).concat(layer.text.trim()).concat(blockquoteContext, "\n\n");
       break;
 
     case "horizontal-rule":
@@ -2335,12 +2345,7 @@ var addMarkdownSyntax = function addMarkdownSyntax(layerName, layer, directoryPa
       break;
 
     case "image":
-      sketchDom.export(layer, {
-        formats: "jpg",
-        output: "".concat(directoryPath, "/assets/"),
-        overwriting: true,
-        scales: "1"
-      });
+      Object(_utils__WEBPACK_IMPORTED_MODULE_0__["exportJpg"])(layer, "".concat(directoryPath, "/assets/"));
       layerMd += "![](./assets/".concat(layer.name, ".jpg)\n\n");
       break;
 
@@ -2480,14 +2485,26 @@ function () {
 /*!***********************************!*\
   !*** ./src/parse-layers/utils.js ***!
   \***********************************/
-/*! exports provided: isBold, isItalic, isStrikeThrough */
+/*! exports provided: exportJpg, isBold, isItalic, isStrikeThrough */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "exportJpg", function() { return exportJpg; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "isBold", function() { return isBold; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "isItalic", function() { return isItalic; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "isStrikeThrough", function() { return isStrikeThrough; });
+var sketchDom = __webpack_require__(/*! sketch/dom */ "sketch/dom");
+
+var exportJpg = function exportJpg(layer, outputFolder) {
+  sketchDom.export(layer, {
+    formats: "jpg",
+    output: outputFolder,
+    overwriting: true,
+    scales: "1"
+  });
+};
+
 var getFontName = function getFontName(layer) {
   return layer.sketchObject.fontPostscriptName();
 };
