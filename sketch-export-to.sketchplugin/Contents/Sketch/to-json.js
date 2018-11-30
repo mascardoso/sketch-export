@@ -2137,7 +2137,7 @@ var exportTo = function exportTo(context, fileType, fileMarkup) {
           switch (_context.prev = _context.next) {
             case 0:
               _context.next = 2;
-              return Object(_parse_layers_parse__WEBPACK_IMPORTED_MODULE_3__["default"])(pageLayers, artboard, directoryPath);
+              return Object(_parse_layers_parse__WEBPACK_IMPORTED_MODULE_3__["default"])(pageLayers, artboard, directoryPath, fileType);
 
             case 2:
               content = _context.sent;
@@ -2212,6 +2212,67 @@ var exportTo = function exportTo(context, fileType, fileMarkup) {
 
 /* harmony default export */ __webpack_exports__["default"] = (exportTo);
 /* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./node_modules/sketch-polyfill-fetch/lib/index.js */ "./node_modules/sketch-polyfill-fetch/lib/index.js")))
+
+/***/ }),
+
+/***/ "./src/parse-layers/json.js":
+/*!**********************************!*\
+  !*** ./src/parse-layers/json.js ***!
+  \**********************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _utils__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./utils */ "./src/parse-layers/utils.js");
+ // check font decoration syntax for markdown
+
+var getFontDecoration = function getFontDecoration(layer) {
+  if (Object(_utils__WEBPACK_IMPORTED_MODULE_0__["isBold"])(layer)) {
+    return "bold";
+  } else if (Object(_utils__WEBPACK_IMPORTED_MODULE_0__["isItalic"])(layer)) {
+    return "italic";
+  } else if (Object(_utils__WEBPACK_IMPORTED_MODULE_0__["isStrikeThrough"])(layer)) {
+    return "strikethrough";
+  } else {
+    return "regular";
+  }
+}; // add layer string
+
+
+var addLayerString = function addLayerString(layerName, layer, directoryPath) {
+  var layerData;
+
+  switch (layerName) {
+    case "heading1":
+    case "heading2":
+    case "heading3":
+    case "heading4":
+    case "blockquote":
+      layerData = {
+        type: layerName,
+        text: layer.text.trim()
+      };
+      break;
+
+    case "paragraph":
+      layerData = {
+        type: layerName,
+        text: layer.text.trim(),
+        decoration: getFontDecoration(layer)
+      };
+      break;
+  }
+
+  return layerData;
+}; // parse layer to json
+
+
+var parseLayerToJson = function parseLayerToJson(layerName, layer, directoryPath) {
+  return addLayerString(layerName, layer, directoryPath);
+};
+
+/* harmony default export */ __webpack_exports__["default"] = (parseLayerToJson);
 
 /***/ }),
 
@@ -2336,46 +2397,69 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @babel/runtime/helpers/asyncToGenerator */ "./node_modules/@babel/runtime/helpers/asyncToGenerator.js");
 /* harmony import */ var _babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_1__);
 /* harmony import */ var _md__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./md */ "./src/parse-layers/md.js");
+/* harmony import */ var _json__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./json */ "./src/parse-layers/json.js");
 
 
 
-var contentParsed = ""; // process the layers
 
-var contentprocessLayers = function contentprocessLayers(layer, directoryPath) {
-  // process grouped layers but ignore grouped layers named image-*
-  if (layer.type === "Group" && !layer.name.match(/^image-/)) {
-    layer.layers.reverse().map(function (layer) {
-      contentprocessLayers(layer);
-    });
-  } else {
-    contentParsed += Object(_md__WEBPACK_IMPORTED_MODULE_2__["default"])(layer.name, layer, directoryPath);
-  }
-}; // main
-
+var contentParsedMd = "";
+var contentParsedJson = []; // main
 
 var getParsedContent =
 /*#__PURE__*/
 function () {
   var _ref = _babel_runtime_helpers_asyncToGenerator__WEBPACK_IMPORTED_MODULE_1___default()(
   /*#__PURE__*/
-  _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee(allLayers, artboardName, directoryPath) {
+  _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.mark(function _callee(allLayers, artboardName, directoryPath, fileType) {
+    var contentprocessLayers;
     return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default.a.wrap(function _callee$(_context) {
       while (1) {
         switch (_context.prev = _context.next) {
           case 0:
-            _context.next = 2;
+            // process the content of layers
+            contentprocessLayers = function contentprocessLayers(layer) {
+              // process grouped layers but ignore grouped layers named image-*
+              if (layer.type === "Group" && !layer.name.match(/^image-/)) {
+                layer.layers.reverse().map(function (layer) {
+                  contentprocessLayers(layer);
+                });
+              } else {
+                if (fileType === "md") {
+                  contentParsedMd += Object(_md__WEBPACK_IMPORTED_MODULE_2__["default"])(layer.name, layer, directoryPath);
+                } else if (fileType === "json") {
+                  var obj = Object(_json__WEBPACK_IMPORTED_MODULE_3__["default"])(layer.name, layer, directoryPath);
+                  obj && contentParsedJson.push(obj);
+                }
+              }
+            }; // process the layers
+
+
+            _context.next = 3;
             return allLayers.map(function (layer) {
               if (layer.type === "Artboard" && layer.name === artboardName) {
                 layer.layers.reverse().map(function (layer) {
-                  contentprocessLayers(layer, directoryPath);
+                  contentprocessLayers(layer);
                 });
               }
             });
 
-          case 2:
-            return _context.abrupt("return", contentParsed);
-
           case 3:
+            if (!(fileType === "md")) {
+              _context.next = 7;
+              break;
+            }
+
+            return _context.abrupt("return", contentParsedMd);
+
+          case 7:
+            if (!(fileType === "json")) {
+              _context.next = 9;
+              break;
+            }
+
+            return _context.abrupt("return", JSON.stringify(contentParsedJson));
+
+          case 9:
           case "end":
             return _context.stop();
         }
@@ -2383,7 +2467,7 @@ function () {
     }, _callee, this);
   }));
 
-  return function getParsedContent(_x, _x2, _x3) {
+  return function getParsedContent(_x, _x2, _x3, _x4) {
     return _ref.apply(this, arguments);
   };
 }();

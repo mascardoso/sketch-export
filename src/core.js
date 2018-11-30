@@ -123,7 +123,12 @@ const exportTo = (context, fileType, fileMarkup) => {
 
   // parse content either for md or json
   const parseContent = async (pageLayers, artboard, directoryPath, file) => {
-    const content = await getParsedContent(pageLayers, artboard, directoryPath);
+    const content = await getParsedContent(
+      pageLayers,
+      artboard,
+      directoryPath,
+      fileType
+    );
     await saveContentToFile(directoryPath, file, content);
     UI.alert(
       "Export complete.",
