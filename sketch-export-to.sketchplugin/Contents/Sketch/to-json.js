@@ -2337,11 +2337,11 @@ var addMarkdownSyntax = function addMarkdownSyntax(layerName, layer, directoryPa
     case "image":
       sketchDom.export(layer, {
         formats: "jpg",
-        output: directoryPath,
+        output: "".concat(directoryPath, "/assets/"),
         overwriting: true,
         scales: "1"
       });
-      layerMd += "![](./".concat(layer.name, ".jpg)\n\n");
+      layerMd += "![](./assets/".concat(layer.name, ".jpg)\n\n");
       break;
 
     case "list-unordered":

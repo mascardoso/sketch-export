@@ -44,11 +44,11 @@ const addMarkdownSyntax = (layerName, layer, directoryPath) => {
     case "image":
       sketchDom.export(layer, {
         formats: "jpg",
-        output: directoryPath,
+        output: `${directoryPath}/assets/`,
         overwriting: true,
         scales: "1"
       });
-      layerMd += `![](./${layer.name}.jpg)\n\n`;
+      layerMd += `![](./assets/${layer.name}.jpg)\n\n`;
       break;
     case "list-unordered":
       layer.text
