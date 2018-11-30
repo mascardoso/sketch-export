@@ -2258,20 +2258,50 @@ var addLayerString = function addLayerString(layerName, layer, directoryPath) {
       break;
 
     case "blockquote":
+    case "horizontal-rule":
+      layerData = {
+        type: layerName
+      };
+      break;
+
+    case "image":
+      Object(_utils__WEBPACK_IMPORTED_MODULE_0__["exportJpg"])(layer, "".concat(directoryPath, "/assets/"));
+      layerData = {
+        type: "image",
+        name: layer.name
+      };
+      break;
+
+    case "list-unordered":
+    case "list-ordered":
+      layerData = {
+        type: layerName,
+        list: []
+      };
+      var regX = layerName === "list-unordered" ? /•\s+/g // remove bullets
+      : /[0-9].\s+/g; // remove digits and dot
+
+      layer.text.trim().replace(regX, "").split(/[\s,]+[\s,]/).forEach(function (listItem) {
+        layerData.list.push(listItem);
+      });
+      break;
+
+    case "paragraph-multi":
+      layerData = {
+        type: layerName,
+        paragraphs: [],
+        decoration: getFontDecoration(layer)
+      };
+      layer.text.trim().split("\n").forEach(function (paragraph) {
+        paragraph.length > 0 && layerData.paragraphs.push(paragraph);
+      });
+      break;
+
     case "paragraph":
       layerData = {
         type: layerName,
         text: layer.text.trim(),
         decoration: getFontDecoration(layer)
-      };
-      break;
-
-    case "image":
-      console.log(layer);
-      Object(_utils__WEBPACK_IMPORTED_MODULE_0__["exportJpg"])(layer, "".concat(directoryPath, "/assets/"));
-      layerData = {
-        type: "image",
-        name: layer.name
       };
       break;
   }
