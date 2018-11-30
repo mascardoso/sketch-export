@@ -2107,10 +2107,19 @@ var exportTo = function exportTo(context, fileType, fileMarkup) {
 
     checkboxPreview.setButtonType(NSSwitchButton);
     checkboxPreview.setBezelStyle(0);
-    checkboxPreview.setTitle("Preview the generated ".concat(fileMarkup, " online"));
+    checkboxPreview.setTitle("Preview the generated ".concat(fileMarkup, " online")); // Create a warning images upload label for the checkbox
+
+    var checkboxPreviewLabel = NSTextField.alloc().initWithFrame(NSMakeRect(18, 0, viewWidth, 22));
+    checkboxPreviewLabel.setStringValue("(images won't be uploaded / visible)");
+    checkboxPreviewLabel.setFont(NSFont.systemFontOfSize_(10));
+    checkboxPreviewLabel.editable = false;
+    checkboxPreviewLabel.selectable = false;
+    checkboxPreviewLabel.bezeled = false;
+    checkboxPreviewLabel.drawsBackground = false;
     view.addSubview(dropdownArtboardLabel);
     view.addSubview(dropdownArtboards);
     view.addSubview(checkboxPreview);
+    view.addSubview(checkboxPreviewLabel);
     var resultExportModal = exportModal.runModal();
 
     if (resultExportModal != "1000") {
@@ -2183,8 +2192,16 @@ var exportTo = function exportTo(context, fileType, fileMarkup) {
     if (resultPreviewModal != "1000") {
       return;
     } else {
-      // open link
-      NSWorkspace.sharedWorkspace().openURL(NSURL.URLWithString("https://stackedit.io/viewer#!url=".concat(url)));
+      var viewerURL;
+
+      if (fileType === "md") {
+        viewerURL = "https://stackedit.io/viewer#!url=";
+      } else if (fileType === "json") {
+        viewerURL = "https://jsoneditoronline.org/?url=";
+      } // open link
+
+
+      NSWorkspace.sharedWorkspace().openURL(NSURL.URLWithString("".concat(viewerURL).concat(url)));
     }
   }; // save preview of content online
 
